@@ -4,6 +4,7 @@ import java.util.List;
 
 class ArvoreBinaria {
     No raiz;
+
     boolean existe(No no, int valor) {
         if (no == null) {
             return false;
@@ -15,17 +16,16 @@ class ArvoreBinaria {
     }
 
 
-    void inserir(int valor) {
+    boolean inserir(int valor) {
         if (existe(raiz, valor)) {
-            System.out.println("Valor já existe na árvore");
-            return;
+            return false;
         }
 
         No novo = new No(valor);
 
         if (raiz == null) {
             raiz = novo;
-            return;
+            return true;
         }
 
         No atual = raiz;
@@ -41,54 +41,66 @@ class ArvoreBinaria {
             }
         }
 
+        if (pai == null) {
+            return false;
+        }
+
         if (valor < pai.valor) {
             pai.esquerda = novo;
         } else {
             pai.direita = novo;
         }
+
+        return true;
     }
 
+    void limpar() {
+        raiz = null;
+    }
 
-    void mostrar(No no) {
-        if (no == null) {
-            System.out.println("(árvore vazia)");
-            return;
+    String gerarVisualizacao() {
+        if (raiz == null) {
+            return "(árvore vazia)";
         }
 
-        int h = altura(no);
-        int cell = larguraMax(no) + 1;
+        StringBuilder sb = new StringBuilder();
+        int h = altura(raiz);
+        int cell = larguraMax(raiz) + 1;
 
         List<No> nivel = new ArrayList<>();
-        nivel.add(no);
+        nivel.add(raiz);
 
         for (int level = 1; level <= h; level++) {
             int first = (int) Math.pow(2, h - level) - 1;
             int between = (int) Math.pow(2, h - level + 1) - 1;
 
-            printSpaces(first * cell);
+            appendSpaces(sb, first * cell);
 
             List<No> prox = new ArrayList<>();
             for (int i = 0; i < nivel.size(); i++) {
                 No atual = nivel.get(i);
 
                 if (atual == null) {
-                    printSpaces(cell);
+                    appendSpaces(sb, cell);
                     prox.add(null);
                     prox.add(null);
                 } else {
-                    printCentered(String.valueOf(atual.valor), cell);
+                    appendCentered(sb, String.valueOf(atual.valor), cell);
                     prox.add(atual.esquerda);
                     prox.add(atual.direita);
                 }
 
                 if (i < nivel.size() - 1) {
-                    printSpaces(between * cell);
+                    appendSpaces(sb, between * cell);
                 }
             }
-            System.out.println();
+            sb.append(System.lineSeparator());
             nivel = prox;
         }
+
+        return sb.toString();
     }
+
 
     private int altura(No no) {
         if (no == null) return 0;
@@ -101,15 +113,17 @@ class ArvoreBinaria {
         return Math.max(aqui, Math.max(larguraMax(no.esquerda), larguraMax(no.direita)));
     }
 
-    private void printSpaces(int n) {
-        for (int i = 0; i < n; i++) System.out.print(" ");
+    private void appendSpaces(StringBuilder sb, int n) {
+        for (int i = 0; i < n; i++) {
+            sb.append(' ');
+        }
     }
 
-    private void printCentered(String s, int width) {
+    private void appendCentered(StringBuilder sb, String s, int width) {
         int left = Math.max(0, (width - s.length()) / 2);
         int right = Math.max(0, width - s.length() - left);
-        printSpaces(left);
-        System.out.print(s);
-        printSpaces(right);
+        appendSpaces(sb, left);
+        sb.append(s);
+        appendSpaces(sb, right);
     }
 }
