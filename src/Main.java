@@ -1,5 +1,8 @@
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -7,7 +10,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
 public class Main {
@@ -20,7 +22,7 @@ public class Main {
             frame.setLayout(new BorderLayout());
 
             PainelPrincipal painelArvore = new PainelPrincipal(arvore);
-            frame.add(new JScrollPane(painelArvore), BorderLayout.CENTER);
+            frame.add(painelArvore, BorderLayout.CENTER);
 
             JMenuBar barraMenu = new JMenuBar();
             JMenu menuArvore = new JMenu("Árvore");
@@ -69,6 +71,16 @@ public class Main {
                 );
 
                 if (confirmacao == JOptionPane.YES_OPTION) {
+                    try {
+                        String serializacao = arvore.serializarParenteses();
+                        Path caminhoArquivo = Path.of("arvore_limpa.txt");
+                        Files.writeString(caminhoArquivo, serializacao);
+                        JOptionPane.showMessageDialog(frame, "Árvore salva em arvore_limpa.txt", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     arvore.limpar();
                     painelArvore.atualizarLayout();
                 }

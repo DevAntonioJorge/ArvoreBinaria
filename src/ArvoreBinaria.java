@@ -1,6 +1,18 @@
 class ArvoreBinaria {
     No raiz;
 
+    String serializarParenteses() {
+        return serializarParenteses(raiz);
+    }
+
+    private String serializarParenteses(No no) {
+        if (no == null) {
+            return "()";
+        }
+
+        return "(" + no.valor + serializarParenteses(no.esquerda) + serializarParenteses(no.direita) + ")";
+    }
+
     boolean inserir(int valor) {
         No novo = new No(valor);
 
@@ -19,11 +31,7 @@ class ArvoreBinaria {
                 return false;
             }
 
-            if (valor < atual.valor) {
-                atual = atual.esquerda;
-            } else {
-                atual = atual.direita;
-            }
+            atual = (valor < atual.valor) ? atual.esquerda : atual.direita;
         }
 
         if (pai == null) {
