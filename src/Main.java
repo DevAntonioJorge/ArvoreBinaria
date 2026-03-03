@@ -3,6 +3,8 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -13,6 +15,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 public class Main {
+    private static final DateTimeFormatter FORMATO_NOME_ARQUIVO = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ArvoreBinaria arvore = new ArvoreBinaria();
@@ -73,9 +77,13 @@ public class Main {
                 if (confirmacao == JOptionPane.YES_OPTION) {
                     try {
                         String serializacao = arvore.serializarParenteses();
-                        Path caminhoArquivo = Path.of("arvore_limpa.txt");
+                        Path pastaArvores = Path.of("arvores");
+                        Files.createDirectories(pastaArvores);
+
+                        String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
+                        Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
                         Files.writeString(caminhoArquivo, serializacao);
-                        JOptionPane.showMessageDialog(frame, "Árvore salva em arvore_limpa.txt", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                     } catch (IOException ex) {
                         JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
                         return;
