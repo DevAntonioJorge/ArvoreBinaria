@@ -4,7 +4,11 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JPanel;
@@ -22,12 +26,91 @@ class PainelPrincipal extends JPanel {
     private static final int LARGURA_BASE = 900;
     private static final int ALTURA_BASE = 500;
     private static final int ESPACAMENTO_HORIZONTAL = 80;
+    private static final double FATOR_ZOOM = 1.1;
+    private static final double ZOOM_MANUAL_MIN = 0.5;
+    private static final double ZOOM_MANUAL_MAX = 4.0;
+
+    private double zoomManual = 1.0;
+    private double panX = 0;
+    private double panY = 0;
+    private double ultimoFitEscala = 1.0;
+    private double ultimoFitDeslocamentoX = 0;
+    private double ultimoFitDeslocamentoY = 0;
+    private Point ultimoPontoArraste;
 
     public PainelPrincipal(ArvoreBinaria arvore) {
         this.arvore = arvore;
         setBackground(Color.WHITE);
         setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
         setPreferredSize(new Dimension(LARGURA_BASE, ALTURA_BASE));
+
+        MouseAdapter mouseAdapter = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                ultimoPontoArraste = e.getPoint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (ultimoPontoArraste == null) {
+                    return;
+                }
+
+                int dx = e.getX() - ultimoPontoArraste.x;
+                int dy = e.getY() - ultimoPontoArraste.y;
+                panX += dx;
+                panY += dy;
+                ultimoPontoArraste = e.getPoint();
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                ultimoPontoArraste = null;
+            }
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                double zoomAnterior = zoomManual;
+
+                if (e.getWheelRotation() < 0) {
+                    zoomManual *= FATOR_ZOOM;
+                } else {
+                    zoomManual /= FATOR_ZOOM;
+                }
+
+                zoomManual = Math.max(ZOOM_MANUAL_MIN, Math.min(ZOOM_MANUAL_MAX, zoomManual));
+                if (zoomManual == zoomAnterior) {
+                    return;
+                }
+
+                double escalaAnterior = ultimoFitEscala * zoomAnterior;
+                double escalaNova = ultimoFitEscala * zoomManual;
+
+                if (escalaAnterior <= 0 || escalaNova <= 0) {
+                    repaint();
+                    return;
+                }
+
+                double txAnterior = ultimoFitDeslocamentoX + panX;
+                double tyAnterior = ultimoFitDeslocamentoY + panY;
+
+                double xLogico = (e.getX() - txAnterior) / escalaAnterior;
+                double yLogico = (e.getY() - tyAnterior) / escalaAnterior;
+
+                double txNovo = e.getX() - (xLogico * escalaNova);
+                double tyNovo = e.getY() - (yLogico * escalaNova);
+
+                panX = txNovo - ultimoFitDeslocamentoX;
+                panY = tyNovo - ultimoFitDeslocamentoY;
+
+                repaint();
+            }
+        };
+
+        addMouseListener(mouseAdapter);
+        addMouseMotionListener(mouseAdapter);
+        addMouseWheelListener(mouseAdapter);
     }
 
     void atualizarLayout() {
@@ -62,17 +145,24 @@ class PainelPrincipal extends JPanel {
         double alturaDisponivel = Math.max(1, getHeight());
         double escalaX = larguraDisponivel / larguraLogica;
         double escalaY = alturaDisponivel / alturaLogica;
-        double escala = Math.min(1.0, Math.min(escalaX, escalaY));
+        double escalaFit = Math.min(1.0, Math.min(escalaX, escalaY));
 
-        if (Double.isNaN(escala) || Double.isInfinite(escala) || escala <= 0) {
-            escala = 1.0;
+        if (Double.isNaN(escalaFit) || Double.isInfinite(escalaFit) || escalaFit <= 0) {
+            escalaFit = 1.0;
         }
 
-        double deslocamentoX = (getWidth() - (larguraLogica * escala)) / 2.0;
-        double deslocamentoY = (getHeight() - (alturaLogica * escala)) / 2.0;
+        ultimoFitEscala = escalaFit;
 
-        g2.translate(deslocamentoX, deslocamentoY);
-        g2.scale(escala, escala);
+        double deslocamentoX = (getWidth() - (larguraLogica * escalaFit)) / 2.0;
+        double deslocamentoY = (getHeight() - (alturaLogica * escalaFit)) / 2.0;
+
+        ultimoFitDeslocamentoX = deslocamentoX;
+        ultimoFitDeslocamentoY = deslocamentoY;
+
+        double escalaFinal = escalaFit * zoomManual;
+
+        g2.translate(deslocamentoX + panX, deslocamentoY + panY);
+        g2.scale(escalaFinal, escalaFinal);
 
         desenharNo(g2, arvore.raiz, posicoes);
 
