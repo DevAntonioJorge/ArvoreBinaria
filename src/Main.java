@@ -49,7 +49,7 @@ public class Main {
             if (arvore.raiz == null) {
                 g2.setColor(Color.DARK_GRAY);
                 g2.setFont(getFont().deriveFont(Font.PLAIN, 22f));
-                g2.drawString("(árvore vazia)", 30, 50);
+                g2.drawString("", 30, 50);
                 g2.dispose();
                 return;
             }
@@ -67,7 +67,7 @@ public class Main {
                 int filhoX = x - gap;
                 int filhoY = y + ALTURA_NIVEL;
                 g2.setColor(Color.GRAY);
-                g2.drawLine(x, y + RAIO_NO, filhoX, filhoY - RAIO_NO);
+                desenharArestaDiagonal(g2, x, y, filhoX, filhoY);
                 desenharNo(g2, no.esquerda, filhoX, filhoY, Math.max(35, gap / 2));
             }
 
@@ -75,11 +75,11 @@ public class Main {
                 int filhoX = x + gap;
                 int filhoY = y + ALTURA_NIVEL;
                 g2.setColor(Color.GRAY);
-                g2.drawLine(x, y + RAIO_NO, filhoX, filhoY - RAIO_NO);
+                desenharArestaDiagonal(g2, x, y, filhoX, filhoY);
                 desenharNo(g2, no.direita, filhoX, filhoY, Math.max(35, gap / 2));
             }
 
-            g2.setColor(new Color(30, 144, 255));
+            g2.setColor(Color.WHITE);
             g2.fillOval(x - RAIO_NO, y - RAIO_NO, RAIO_NO * 2, RAIO_NO * 2);
             g2.setColor(Color.BLACK);
             g2.drawOval(x - RAIO_NO, y - RAIO_NO, RAIO_NO * 2, RAIO_NO * 2);
@@ -88,6 +88,26 @@ public class Main {
             int larguraTexto = g2.getFontMetrics().stringWidth(valor);
             int ascent = g2.getFontMetrics().getAscent();
             g2.drawString(valor, x - (larguraTexto / 2), y + (ascent / 2) - 2);
+        }
+
+        private void desenharArestaDiagonal(Graphics2D g2, int xPai, int yPai, int xFilho, int yFilho) {
+            double dx = xFilho - xPai;
+            double dy = yFilho - yPai;
+            double distancia = Math.hypot(dx, dy);
+
+            if (distancia == 0) {
+                return;
+            }
+
+            double ux = dx / distancia;
+            double uy = dy / distancia;
+
+            int xOrigem = (int) Math.round(xPai + ux * RAIO_NO);
+            int yOrigem = (int) Math.round(yPai + uy * RAIO_NO);
+            int xDestino = (int) Math.round(xFilho - ux * RAIO_NO);
+            int yDestino = (int) Math.round(yFilho - uy * RAIO_NO);
+
+            g2.drawLine(xOrigem, yOrigem, xDestino, yDestino);
         }
 
         private int altura(No no) {

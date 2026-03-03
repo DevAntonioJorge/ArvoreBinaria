@@ -60,7 +60,7 @@ class ArvoreBinaria {
 
     String gerarVisualizacao() {
         if (raiz == null) {
-            return "(árvore vazia)";
+            return "";
         }
 
         StringBuilder sb = new StringBuilder();
