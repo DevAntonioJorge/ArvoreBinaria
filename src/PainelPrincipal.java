@@ -129,7 +129,7 @@ class PainelPrincipal extends JPanel {
         if (arvore.raiz == null) {
             g2.setColor(Color.DARK_GRAY);
             g2.setFont(getFont().deriveFont(Font.PLAIN, 22f));
-            g2.drawString("(árvore vazia)", 30, 50);
+            g2.drawString("", 30, 50);
             g2.dispose();
             return;
         }
