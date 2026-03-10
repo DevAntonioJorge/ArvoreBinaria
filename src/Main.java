@@ -25,6 +25,10 @@ public class Main {
     private static final Pattern SEPARADOR_LISTA_NOS = Pattern.compile("[,\\-\\s]+");
 
     private record OpcaoHistorico(Path caminho, String serializacao, String preview) {
+        @Override
+        public String toString() {
+            return preview;
+        }
     }
 
     public static void main(String[] args) {
