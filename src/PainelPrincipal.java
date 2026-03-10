@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 class PainelPrincipal extends JPanel {
@@ -37,6 +38,7 @@ class PainelPrincipal extends JPanel {
     private double ultimoFitDeslocamentoX = 0;
     private double ultimoFitDeslocamentoY = 0;
     private Point ultimoPontoArraste;
+    private final Map<No, int[]> posicoesUltimoDesenho = new HashMap<>();
 
     public PainelPrincipal(ArvoreBinaria arvore) {
         this.arvore = arvore;
@@ -67,6 +69,34 @@ class PainelPrincipal extends JPanel {
             @Override
             public void mouseReleased(MouseEvent e) {
                 ultimoPontoArraste = null;
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getButton() != MouseEvent.BUTTON1) {
+                    return;
+                }
+
+                No noSelecionado = encontrarNoNoPontoTela(e.getX(), e.getY());
+                if (noSelecionado == null) {
+                    return;
+                }
+
+                int nivel = arvore.nivelDoNo(noSelecionado);
+                int profundidade = arvore.profundidadeDoNo(noSelecionado);
+                int altura = arvore.alturaDoNo(noSelecionado);
+
+                String mensagem = "Nó: " + noSelecionado.valor
+                        + "\nNível do nó: " + nivel
+                        + "\nProfundidade do nó: " + profundidade
+                        + "\nAltura do nó: " + altura;
+
+                JOptionPane.showMessageDialog(
+                        PainelPrincipal.this,
+                        mensagem,
+                        "Informações do nó",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
             }
 
             @Override
@@ -122,6 +152,8 @@ class PainelPrincipal extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
+        posicoesUltimoDesenho.clear();
+
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setStroke(new BasicStroke(2f));
@@ -136,6 +168,7 @@ class PainelPrincipal extends JPanel {
         Map<No, int[]> posicoes = new HashMap<>();
         MetricasLayout metricas = new MetricasLayout();
         preencherPosicoesEmOrdem(arvore.raiz, 0, metricas, posicoes);
+        posicoesUltimoDesenho.putAll(posicoes);
 
         int larguraLogica = calcularLarguraLogica(metricas.quantidadeNos);
         int alturaLogica = calcularAlturaLogica(metricas.profundidadeMaxima + 1);
@@ -169,27 +202,71 @@ class PainelPrincipal extends JPanel {
     }
 
     private void desenharLegenda(Graphics2D g2) {
-        String legenda = "Tipo da árvore: " + arvore.tipoEstrutural();
+        String legendaTipo = "Tipo da árvore: " + arvore.tipoEstrutural();
+        String legendaMetricas = montarLegendaMetricasArvore();
         Font fonteOriginal = g2.getFont();
         Font fonteLegenda = fonteOriginal.deriveFont(Font.BOLD, 12f);
 
         g2.setFont(fonteLegenda);
-        int larguraTexto = g2.getFontMetrics().stringWidth(legenda);
+        int larguraTextoTipo = g2.getFontMetrics().stringWidth(legendaTipo);
+        int larguraTextoMetricas = g2.getFontMetrics().stringWidth(legendaMetricas);
+        int larguraTexto = Math.max(larguraTextoTipo, larguraTextoMetricas);
         int alturaTexto = g2.getFontMetrics().getHeight();
 
         int x = 10;
         int y = 10;
         int larguraCaixa = larguraTexto + 12;
-        int alturaCaixa = alturaTexto + 4;
+        int alturaCaixa = (alturaTexto * 2) + 8;
 
         g2.setColor(new Color(255, 255, 255, 220));
         g2.fillRoundRect(x, y, larguraCaixa, alturaCaixa, 10, 10);
         g2.setColor(Color.DARK_GRAY);
         g2.drawRoundRect(x, y, larguraCaixa, alturaCaixa, 10, 10);
 
-        int linhaBaseTexto = y + ((alturaCaixa - alturaTexto) / 2) + g2.getFontMetrics().getAscent();
-        g2.drawString(legenda, x + 6, linhaBaseTexto);
+        int linhaBasePrimeira = y + 4 + g2.getFontMetrics().getAscent();
+        int linhaBaseSegunda = linhaBasePrimeira + alturaTexto;
+
+        g2.drawString(legendaTipo, x + 6, linhaBasePrimeira);
+        g2.drawString(legendaMetricas, x + 6, linhaBaseSegunda);
         g2.setFont(fonteOriginal);
+    }
+
+    private String montarLegendaMetricasArvore() {
+        if (arvore.raiz == null) {
+            return "Nível: - | Profundidade: - | Altura: -";
+        }
+
+        int nivel = arvore.nivelMaximoArvore();
+        int profundidade = arvore.profundidadeArvore();
+        int altura = arvore.alturaArvore();
+
+        return "Nível: " + nivel + " | Profundidade: " + profundidade + " | Altura: " + altura;
+    }
+
+    private No encontrarNoNoPontoTela(int xTela, int yTela) {
+        if (arvore.raiz == null || posicoesUltimoDesenho.isEmpty()) {
+            return null;
+        }
+
+        double escalaFinal = ultimoFitEscala * zoomManual;
+        if (escalaFinal <= 0) {
+            return null;
+        }
+
+        double xLogico = (xTela - (ultimoFitDeslocamentoX + panX)) / escalaFinal;
+        double yLogico = (yTela - (ultimoFitDeslocamentoY + panY)) / escalaFinal;
+
+        for (Map.Entry<No, int[]> entry : posicoesUltimoDesenho.entrySet()) {
+            int[] posicao = entry.getValue();
+            double dx = xLogico - posicao[0];
+            double dy = yLogico - posicao[1];
+
+            if ((dx * dx) + (dy * dy) <= (RAIO_NO * RAIO_NO)) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
     }
 
     private void desenharNo(Graphics2D g2, No no, Map<No, int[]> posicoes) {
