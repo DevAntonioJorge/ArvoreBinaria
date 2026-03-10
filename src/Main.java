@@ -139,23 +139,18 @@ public class Main {
                     JOptionPane.WARNING_MESSAGE
             );
 
-            if (confirmacao == JOptionPane.YES_OPTION) {
-                if (arvore.raiz != null && houveAlteracao[0]) {
-                    try {
-                        String serializacao = arvore.serializarParenteses();
-                        Path pastaArvores = Path.of("arvores");
-                        Files.createDirectories(pastaArvores);
+            if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) try {
+                String serializacao = arvore.serializarParenteses();
+                Path pastaArvores = Path.of("arvores");
+                Files.createDirectories(pastaArvores);
 
-                        String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
-                        Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
-                        Files.writeString(caminhoArquivo, serializacao);
-                        JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-
+                String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
+                Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
+                Files.writeString(caminhoArquivo, serializacao);
+                JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+            } finally {
                 arvore.limpar();
                 houveAlteracao[0] = false;
                 painelArvore.atualizarLayout();
