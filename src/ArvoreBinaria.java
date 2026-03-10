@@ -4,7 +4,32 @@ import java.util.Deque;
 import java.util.List;
 
 class ArvoreBinaria {
+    private static class Cursor {
+        int indice;
+    }
+
     No raiz;
+
+    void carregarDeSerializacao(String serializacao) {
+        if (serializacao == null) {
+            throw new IllegalArgumentException("Serialização inválida.");
+        }
+
+        String texto = serializacao.trim();
+        if (texto.isEmpty()) {
+            throw new IllegalArgumentException("Serialização vazia.");
+        }
+
+        Cursor cursor = new Cursor();
+        No novaRaiz = desserializarParenteses(texto, cursor);
+        avancarEspacos(texto, cursor);
+
+        if (cursor.indice != texto.length()) {
+            throw new IllegalArgumentException("Formato inválido de serialização.");
+        }
+
+        raiz = novaRaiz;
+    }
 
     int nivelMaximoArvore() {
         return profundidadeArvore();
@@ -283,5 +308,64 @@ class ArvoreBinaria {
         int alturaEsquerda = alturaNo(no.esquerda);
         int alturaDireita = alturaNo(no.direita);
         return 1 + Math.max(alturaEsquerda, alturaDireita);
+    }
+
+    private No desserializarParenteses(String texto, Cursor cursor) {
+        avancarEspacos(texto, cursor);
+
+        if (cursor.indice >= texto.length() || texto.charAt(cursor.indice) != '(') {
+            throw new IllegalArgumentException("Formato inválido de serialização.");
+        }
+        cursor.indice++;
+
+        avancarEspacos(texto, cursor);
+        if (cursor.indice < texto.length() && texto.charAt(cursor.indice) == ')') {
+            cursor.indice++;
+            return null;
+        }
+
+        int valor = lerInteiro(texto, cursor);
+        No no = new No(valor);
+        no.esquerda = desserializarParenteses(texto, cursor);
+        no.direita = desserializarParenteses(texto, cursor);
+
+        avancarEspacos(texto, cursor);
+        if (cursor.indice >= texto.length() || texto.charAt(cursor.indice) != ')') {
+            throw new IllegalArgumentException("Formato inválido de serialização.");
+        }
+        cursor.indice++;
+
+        return no;
+    }
+
+    private int lerInteiro(String texto, Cursor cursor) {
+        avancarEspacos(texto, cursor);
+
+        int inicio = cursor.indice;
+        if (cursor.indice < texto.length() && texto.charAt(cursor.indice) == '-') {
+            cursor.indice++;
+        }
+
+        int inicioDigitos = cursor.indice;
+        while (cursor.indice < texto.length() && Character.isDigit(texto.charAt(cursor.indice))) {
+            cursor.indice++;
+        }
+
+        if (inicioDigitos == cursor.indice) {
+            throw new IllegalArgumentException("Valor numérico inválido na serialização.");
+        }
+
+        String numero = texto.substring(inicio, cursor.indice);
+        try {
+            return Integer.parseInt(numero);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Valor numérico inválido na serialização.");
+        }
+    }
+
+    private void avancarEspacos(String texto, Cursor cursor) {
+        while (cursor.indice < texto.length() && Character.isWhitespace(texto.charAt(cursor.indice))) {
+            cursor.indice++;
+        }
     }
 }
