@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -7,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -98,11 +100,60 @@ public class Main {
             JButton botaoInserir = new JButton("Inserir nó");
             botaoInserir.addActionListener(acaoInserir);
 
+            JButton botaoCaminhonamento = new JButton("Caminhonamento");
+            botaoCaminhonamento.addActionListener(e -> {
+                String[] opcoes = {"LNR", "NLR", "LRN", "Largura"};
+                int opcaoSelecionada = JOptionPane.showOptionDialog(
+                        frame,
+                        "Selecione o tipo de caminhamento:",
+                        "Caminhonamento",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opcoes,
+                        opcoes[0]
+                );
+
+                if (opcaoSelecionada < 0 || opcaoSelecionada >= opcoes.length) {
+                    return;
+                }
+
+                String tipo = opcoes[opcaoSelecionada];
+                String sequencia;
+
+                switch (tipo) {
+                    case "LNR":
+                        sequencia = arvore.caminhamentoLNR();
+                        break;
+                    case "NLR":
+                        sequencia = arvore.caminhamentoNLR();
+                        break;
+                    case "LRN":
+                        sequencia = arvore.caminhamentoLRN();
+                        break;
+                    default:
+                        sequencia = arvore.caminhamentoLargura();
+                        break;
+                }
+
+                JPanel painelResultado = new JPanel(new GridLayout(2, 1, 0, 8));
+                painelResultado.add(new JLabel("Sequência do caminhamento " + tipo + ":"));
+                painelResultado.add(new JLabel(sequencia));
+
+                JOptionPane.showMessageDialog(
+                        frame,
+                        painelResultado,
+                        "Resultado do caminhamento",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            });
+
             JButton botaoLimpar = new JButton("Limpar árvore");
             botaoLimpar.addActionListener(acaoLimpar);
 
             JPanel painelAcoes = new JPanel();
             painelAcoes.add(botaoInserir);
+            painelAcoes.add(botaoCaminhonamento);
             painelAcoes.add(botaoLimpar);
             frame.add(painelAcoes, BorderLayout.NORTH);
 
