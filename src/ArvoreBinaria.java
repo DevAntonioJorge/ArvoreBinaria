@@ -6,6 +6,58 @@ import java.util.List;
 class ArvoreBinaria {
     No raiz;
 
+    int nivelMaximoArvore() {
+        return profundidadeArvore();
+    }
+
+    int profundidadeArvore() {
+        if (raiz == null) {
+            return -1;
+        }
+
+        return profundidadeMaxima(raiz, 0);
+    }
+
+    int alturaArvore() {
+        if (raiz == null) {
+            return -1;
+        }
+
+        return alturaNo(raiz);
+    }
+
+    int nivelDoNo(No no) {
+        return profundidadeDoNo(no);
+    }
+
+    int profundidadeDoNo(No no) {
+        return profundidadeDoNo(raiz, no, 0);
+    }
+
+    int alturaDoNo(No no) {
+        if (no == null) {
+            return -1;
+        }
+
+        return alturaNo(no);
+    }
+
+    String tipoEstrutural() {
+        if (raiz == null) {
+            return "Árvore vazia";
+        }
+
+        if (ehCheia()) {
+            return "Cheia";
+        }
+
+        if (ehCompleta()) {
+            return "Completa";
+        }
+
+        return "Não completa";
+    }
+
     String serializarParenteses() {
         return serializarParenteses(raiz);
     }
@@ -54,6 +106,56 @@ class ArvoreBinaria {
 
     void limpar() {
         raiz = null;
+    }
+
+    private boolean ehCheia() {
+        return ehCheia(raiz);
+    }
+
+    private boolean ehCheia(No no) {
+        if (no == null) {
+            return true;
+        }
+
+        if (no.esquerda == null && no.direita == null) {
+            return true;
+        }
+
+        if (no.esquerda != null && no.direita != null) {
+            return ehCheia(no.esquerda) && ehCheia(no.direita);
+        }
+
+        return false;
+    }
+
+    private boolean ehCompleta() {
+        Deque<No> fila = new ArrayDeque<>();
+        fila.add(raiz);
+        boolean encontrouFilhoAusente = false;
+
+        while (!fila.isEmpty()) {
+            No atual = fila.remove();
+
+            if (atual.esquerda != null) {
+                if (encontrouFilhoAusente) {
+                    return false;
+                }
+                fila.add(atual.esquerda);
+            } else {
+                encontrouFilhoAusente = true;
+            }
+
+            if (atual.direita != null) {
+                if (encontrouFilhoAusente) {
+                    return false;
+                }
+                fila.add(atual.direita);
+            } else {
+                encontrouFilhoAusente = true;
+            }
+        }
+
+        return true;
     }
 
     String caminhamentoLNR() {
@@ -143,5 +245,43 @@ class ArvoreBinaria {
         }
 
         return sb.toString();
+    }
+
+    private int profundidadeMaxima(No no, int profundidadeAtual) {
+        if (no == null) {
+            return -1;
+        }
+
+        int profundidadeEsquerda = profundidadeMaxima(no.esquerda, profundidadeAtual + 1);
+        int profundidadeDireita = profundidadeMaxima(no.direita, profundidadeAtual + 1);
+
+        return Math.max(profundidadeAtual, Math.max(profundidadeEsquerda, profundidadeDireita));
+    }
+
+    private int profundidadeDoNo(No atual, No alvo, int profundidadeAtual) {
+        if (atual == null || alvo == null) {
+            return -1;
+        }
+
+        if (atual == alvo) {
+            return profundidadeAtual;
+        }
+
+        int profundidadeEsquerda = profundidadeDoNo(atual.esquerda, alvo, profundidadeAtual + 1);
+        if (profundidadeEsquerda != -1) {
+            return profundidadeEsquerda;
+        }
+
+        return profundidadeDoNo(atual.direita, alvo, profundidadeAtual + 1);
+    }
+
+    private int alturaNo(No no) {
+        if (no == null) {
+            return -1;
+        }
+
+        int alturaEsquerda = alturaNo(no.esquerda);
+        int alturaDireita = alturaNo(no.direita);
+        return 1 + Math.max(alturaEsquerda, alturaDireita);
     }
 }
