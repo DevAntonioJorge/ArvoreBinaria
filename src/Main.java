@@ -24,21 +24,7 @@ public class Main {
     private static final int TAMANHO_MAXIMO_PREVIEW_HISTORICO = 35;
     private static final Pattern SEPARADOR_LISTA_NOS = Pattern.compile("[,\\-\\s]+");
 
-    private static class OpcaoHistorico {
-        private final Path caminho;
-        private final String serializacao;
-        private final String preview;
-
-        private OpcaoHistorico(Path caminho, String serializacao, String preview) {
-            this.caminho = caminho;
-            this.serializacao = serializacao;
-            this.preview = preview;
-        }
-
-        @Override
-        public String toString() {
-            return preview;
-        }
+    private record OpcaoHistorico(Path caminho, String serializacao, String preview) {
     }
 
     public static void main(String[] args) {
