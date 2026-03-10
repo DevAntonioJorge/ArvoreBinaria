@@ -5,10 +5,12 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.geom.Area;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
@@ -37,6 +39,7 @@ class PainelPrincipal extends JPanel {
     private double ultimoFitEscala = 1.0;
     private double ultimoFitDeslocamentoX = 0;
     private double ultimoFitDeslocamentoY = 0;
+    private Rectangle areaLegenda = new Rectangle(0, 0, 0, 0);
     private Point ultimoPontoArraste;
     private final Map<No, int[]> posicoesUltimoDesenho = new HashMap<>();
 
@@ -193,6 +196,12 @@ class PainelPrincipal extends JPanel {
 
         double escalaFinal = escalaFit * zoomManual;
 
+        Area areaDesenho = new Area(new Rectangle(0, 0, getWidth(), getHeight()));
+        if (!areaLegenda.isEmpty()) {
+            areaDesenho.subtract(new Area(areaLegenda));
+        }
+
+        g2.setClip(areaDesenho);
         g2.translate(deslocamentoX + panX, deslocamentoY + panY);
         g2.scale(escalaFinal, escalaFinal);
 
@@ -217,6 +226,7 @@ class PainelPrincipal extends JPanel {
         int y = 10;
         int larguraCaixa = larguraTexto + 12;
         int alturaCaixa = (alturaTexto * 2) + 8;
+        areaLegenda = new Rectangle(x, y, larguraCaixa, alturaCaixa);
 
         g2.setColor(new Color(255, 255, 255, 220));
         g2.fillRoundRect(x, y, larguraCaixa, alturaCaixa, 10, 10);
@@ -245,6 +255,10 @@ class PainelPrincipal extends JPanel {
 
     private No encontrarNoNoPontoTela(int xTela, int yTela) {
         if (arvore.raiz == null || posicoesUltimoDesenho.isEmpty()) {
+            return null;
+        }
+
+        if (areaLegenda.contains(xTela, yTela)) {
             return null;
         }
 
