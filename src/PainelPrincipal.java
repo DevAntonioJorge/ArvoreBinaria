@@ -126,10 +126,9 @@ class PainelPrincipal extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setStroke(new BasicStroke(2f));
 
+        desenharLegenda(g2);
+
         if (arvore.raiz == null) {
-            g2.setColor(Color.DARK_GRAY);
-            g2.setFont(getFont().deriveFont(Font.PLAIN, 22f));
-            g2.drawString("", 30, 50);
             g2.dispose();
             return;
         }
@@ -167,6 +166,30 @@ class PainelPrincipal extends JPanel {
         desenharNo(g2, arvore.raiz, posicoes);
 
         g2.dispose();
+    }
+
+    private void desenharLegenda(Graphics2D g2) {
+        String legenda = "Tipo da árvore: " + arvore.tipoEstrutural();
+        Font fonteOriginal = g2.getFont();
+        Font fonteLegenda = fonteOriginal.deriveFont(Font.BOLD, 12f);
+
+        g2.setFont(fonteLegenda);
+        int larguraTexto = g2.getFontMetrics().stringWidth(legenda);
+        int alturaTexto = g2.getFontMetrics().getHeight();
+
+        int x = 10;
+        int y = 10;
+        int larguraCaixa = larguraTexto + 12;
+        int alturaCaixa = alturaTexto + 4;
+
+        g2.setColor(new Color(255, 255, 255, 220));
+        g2.fillRoundRect(x, y, larguraCaixa, alturaCaixa, 10, 10);
+        g2.setColor(Color.DARK_GRAY);
+        g2.drawRoundRect(x, y, larguraCaixa, alturaCaixa, 10, 10);
+
+        int linhaBaseTexto = y + ((alturaCaixa - alturaTexto) / 2) + g2.getFontMetrics().getAscent();
+        g2.drawString(legenda, x + 6, linhaBaseTexto);
+        g2.setFont(fonteOriginal);
     }
 
     private void desenharNo(Graphics2D g2, No no, Map<No, int[]> posicoes) {

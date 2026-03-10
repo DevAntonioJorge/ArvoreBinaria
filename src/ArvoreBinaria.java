@@ -6,6 +6,22 @@ import java.util.List;
 class ArvoreBinaria {
     No raiz;
 
+    String tipoEstrutural() {
+        if (raiz == null) {
+            return "Árvore vazia";
+        }
+
+        if (ehCheia()) {
+            return "Cheia";
+        }
+
+        if (ehCompleta()) {
+            return "Completa";
+        }
+
+        return "Não completa";
+    }
+
     String serializarParenteses() {
         return serializarParenteses(raiz);
     }
@@ -54,6 +70,56 @@ class ArvoreBinaria {
 
     void limpar() {
         raiz = null;
+    }
+
+    private boolean ehCheia() {
+        return ehCheia(raiz);
+    }
+
+    private boolean ehCheia(No no) {
+        if (no == null) {
+            return true;
+        }
+
+        if (no.esquerda == null && no.direita == null) {
+            return true;
+        }
+
+        if (no.esquerda != null && no.direita != null) {
+            return ehCheia(no.esquerda) && ehCheia(no.direita);
+        }
+
+        return false;
+    }
+
+    private boolean ehCompleta() {
+        Deque<No> fila = new ArrayDeque<>();
+        fila.add(raiz);
+        boolean encontrouFilhoAusente = false;
+
+        while (!fila.isEmpty()) {
+            No atual = fila.remove();
+
+            if (atual.esquerda != null) {
+                if (encontrouFilhoAusente) {
+                    return false;
+                }
+                fila.add(atual.esquerda);
+            } else {
+                encontrouFilhoAusente = true;
+            }
+
+            if (atual.direita != null) {
+                if (encontrouFilhoAusente) {
+                    return false;
+                }
+                fila.add(atual.direita);
+            } else {
+                encontrouFilhoAusente = true;
+            }
+        }
+
+        return true;
     }
 
     String caminhamentoLNR() {
