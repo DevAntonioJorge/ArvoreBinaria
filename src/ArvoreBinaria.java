@@ -8,7 +8,20 @@ class ArvoreBinaria {
         int indice;
     }
 
+    private static class InsercaoResultado {
+        boolean inseriu;
+    }
+
     No raiz;
+    private boolean rebalanceamentoAtivo = true;
+
+    boolean isRebalanceamentoAtivo() {
+        return rebalanceamentoAtivo;
+    }
+
+    void setRebalanceamentoAtivo(boolean rebalanceamentoAtivo) {
+        this.rebalanceamentoAtivo = rebalanceamentoAtivo;
+    }
 
     void carregarDeSerializacao(String serializacao) {
         if (serializacao == null) {
@@ -96,37 +109,15 @@ class ArvoreBinaria {
     }
 
     boolean inserir(int valor) {
-        No novo = new No(valor);
+        InsercaoResultado resultado = new InsercaoResultado();
 
-        if (raiz == null) {
-            raiz = novo;
-            return true;
-        }
-
-        No atual = raiz;
-        No pai = null;
-
-        while (atual != null) {
-            pai = atual;
-
-            if (valor == atual.valor) {
-                return false;
-            }
-
-            atual = (valor < atual.valor) ? atual.esquerda : atual.direita;
-        }
-
-        if (pai == null) {
-            return false;
-        }
-
-        if (valor < pai.valor) {
-            pai.esquerda = novo;
+        if (rebalanceamentoAtivo) {
+            raiz = inserirAVL(raiz, valor, resultado);
         } else {
-            pai.direita = novo;
+            raiz = inserirSemRebalanceamento(raiz, valor, resultado);
         }
 
-        return true;
+        return resultado.inseriu;
     }
 
     void limpar() {
@@ -301,13 +292,7 @@ class ArvoreBinaria {
     }
 
     private int alturaNo(No no) {
-        if (no == null) {
-            return -1;
-        }
-
-        int alturaEsquerda = alturaNo(no.esquerda);
-        int alturaDireita = alturaNo(no.direita);
-        return 1 + Math.max(alturaEsquerda, alturaDireita);
+        return altura(no);
     }
 
     private No desserializarParenteses(String texto, Cursor cursor) {
@@ -328,6 +313,7 @@ class ArvoreBinaria {
         No no = new No(valor);
         no.esquerda = desserializarParenteses(texto, cursor);
         no.direita = desserializarParenteses(texto, cursor);
+        atualizarAltura(no);
 
         avancarEspacos(texto, cursor);
         if (cursor.indice >= texto.length() || texto.charAt(cursor.indice) != ')') {
@@ -336,6 +322,106 @@ class ArvoreBinaria {
         cursor.indice++;
 
         return no;
+    }
+
+    private No inserirAVL(No no, int valor, InsercaoResultado resultado) {
+        if (no == null) {
+            resultado.inseriu = true;
+            return new No(valor);
+        }
+
+        if (valor < no.valor) {
+            no.esquerda = inserirAVL(no.esquerda, valor, resultado);
+        } else if (valor > no.valor) {
+            no.direita = inserirAVL(no.direita, valor, resultado);
+        } else {
+            return no;
+        }
+
+        atualizarAltura(no);
+        return rebalancear(no);
+    }
+
+    private No inserirSemRebalanceamento(No no, int valor, InsercaoResultado resultado) {
+        if (no == null) {
+            resultado.inseriu = true;
+            return new No(valor);
+        }
+
+        if (valor < no.valor) {
+            no.esquerda = inserirSemRebalanceamento(no.esquerda, valor, resultado);
+        } else if (valor > no.valor) {
+            no.direita = inserirSemRebalanceamento(no.direita, valor, resultado);
+        } else {
+            return no;
+        }
+
+        atualizarAltura(no);
+        return no;
+    }
+
+    private int altura(No no) {
+        return no == null ? -1 : no.altura;
+    }
+
+    private void atualizarAltura(No no) {
+        if (no == null) {
+            return;
+        }
+
+        no.altura = 1 + Math.max(altura(no.esquerda), altura(no.direita));
+    }
+
+    private int fatorBalanceamento(No no) {
+        if (no == null) {
+            return 0;
+        }
+
+        return altura(no.esquerda) - altura(no.direita);
+    }
+
+    private No rebalancear(No no) {
+        int fator = fatorBalanceamento(no);
+
+        if (fator > 1) {
+            if (fatorBalanceamento(no.esquerda) < 0) {
+                no.esquerda = rotacaoEsquerda(no.esquerda);
+            }
+            return rotacaoDireita(no);
+        }
+
+        if (fator < -1) {
+            if (fatorBalanceamento(no.direita) > 0) {
+                no.direita = rotacaoDireita(no.direita);
+            }
+            return rotacaoEsquerda(no);
+        }
+
+        return no;
+    }
+
+    private No rotacaoDireita(No no) {
+        No novaRaiz = no.esquerda;
+        No subArvoreDireita = novaRaiz.direita;
+
+        novaRaiz.direita = no;
+        no.esquerda = subArvoreDireita;
+
+        atualizarAltura(no);
+        atualizarAltura(novaRaiz);
+        return novaRaiz;
+    }
+
+    private No rotacaoEsquerda(No no) {
+        No novaRaiz = no.direita;
+        No subArvoreEsquerda = novaRaiz.esquerda;
+
+        novaRaiz.esquerda = no;
+        no.direita = subArvoreEsquerda;
+
+        atualizarAltura(no);
+        atualizarAltura(novaRaiz);
+        return novaRaiz;
     }
 
     private int lerInteiro(String texto, Cursor cursor) {

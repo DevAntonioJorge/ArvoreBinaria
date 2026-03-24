@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -17,12 +18,14 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 
 public class Main {
     private static final DateTimeFormatter FORMATO_NOME_ARQUIVO = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
     private static final int TAMANHO_MAXIMO_PREVIEW_HISTORICO = 35;
     private static final Pattern SEPARADOR_LISTA_NOS = Pattern.compile("[,\\-\\s]+");
+    private static final Pattern ESPACOS_UNICODE = Pattern.compile("\\p{Z}+");
 
     private record OpcaoHistorico(Path caminho, String serializacao, String preview) {
         @Override
@@ -57,6 +60,46 @@ public class Main {
             ActionListener acaoLimpar = criarAcaoLimpar(frame, arvore, painelArvore, houveAlteracao);
             itemLimpar.addActionListener(acaoLimpar);
 
+            JCheckBoxMenuItem itemRebalanceamento = new JCheckBoxMenuItem(
+                "Rebalanceamento automático (AVL)",
+                arvore.isRebalanceamentoAtivo()
+            );
+
+            JToggleButton botaoRebalanceamento = new JToggleButton("AVL: ON", arvore.isRebalanceamentoAtivo());
+            itemRebalanceamento.addActionListener(e -> {
+            boolean ativo = itemRebalanceamento.isSelected();
+            botaoRebalanceamento.setSelected(ativo);
+            botaoRebalanceamento.setText(ativo ? "AVL: ON" : "AVL: OFF");
+            arvore.setRebalanceamentoAtivo(ativo);
+
+            JOptionPane.showMessageDialog(
+                frame,
+                "Rebalanceamento " + (ativo ? "ativado" : "desativado") + ".\n"
+                    + "A configuração vale para as próximas inserções.",
+                "Configuração de inserção",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+
+            painelArvore.atualizarLayout();
+            });
+
+        botaoRebalanceamento.addActionListener(e -> {
+        boolean ativo = botaoRebalanceamento.isSelected();
+        botaoRebalanceamento.setText(ativo ? "AVL: ON" : "AVL: OFF");
+        itemRebalanceamento.setSelected(ativo);
+        arvore.setRebalanceamentoAtivo(ativo);
+
+        JOptionPane.showMessageDialog(
+            frame,
+            "Rebalanceamento " + (ativo ? "ativado" : "desativado") + ".\n"
+                + "A configuração vale para as próximas inserções.",
+            "Configuração de inserção",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+
+        painelArvore.atualizarLayout();
+        });
+
             JButton botaoInserir = new JButton("Inserir nó");
             botaoInserir.addActionListener(acaoInserir);
 
@@ -77,11 +120,13 @@ public class Main {
             painelAcoes.add(botaoCaminhonamento);
             painelAcoes.add(botaoLimpar);
             painelAcoes.add(botaoHistorico);
+            painelAcoes.add(botaoRebalanceamento);
             frame.add(painelAcoes, BorderLayout.NORTH);
 
             menuArvore.add(itemInserir);
             menuArvore.add(itemVisualizar);
             menuArvore.add(itemLimpar);
+            menuArvore.add(itemRebalanceamento);
             barraMenu.add(menuArvore);
             frame.setJMenuBar(barraMenu);
 
@@ -187,11 +232,15 @@ public class Main {
                 return;
             }
 
+            // Trata espaços invisíveis (ex.: NBSP) copiados de outros lugares.
+            entrada = ESPACOS_UNICODE.matcher(entrada).replaceAll(" ");
+
             String[] partes = SEPARADOR_LISTA_NOS.split(entrada);
             int inseridos = 0;
             int repetidos = 0;
 
             for (String parte : partes) {
+                parte = ESPACOS_UNICODE.matcher(parte).replaceAll(" ").trim();
                 if (parte.isBlank()) {
                     continue;
                 }
