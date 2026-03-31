@@ -102,7 +102,7 @@ class ArvoreBinaria {
     boolean inserir(int valor) {
         InsercaoResultado resultado = new InsercaoResultado();
 
-        raiz = inserirSemRebalanceamento(raiz, valor, resultado);
+        raiz = inserirNo(raiz, valor, resultado);
         return resultado.inseriu;
     }
 
@@ -310,16 +310,16 @@ class ArvoreBinaria {
         return no;
     }
 
-    private No inserirSemRebalanceamento(No no, int valor, InsercaoResultado resultado) {
+    private No inserirNo(No no, int valor, InsercaoResultado resultado) {
         if (no == null) {
             resultado.inseriu = true;
             return new No(valor);
         }
 
         if (valor < no.valor) {
-            no.esquerda = inserirSemRebalanceamento(no.esquerda, valor, resultado);
+            no.esquerda = inserirNo(no.esquerda, valor, resultado);
         } else if (valor > no.valor) {
-            no.direita = inserirSemRebalanceamento(no.direita, valor, resultado);
+            no.direita = inserirNo(no.direita, valor, resultado);
         } else {
             return no;
         }
