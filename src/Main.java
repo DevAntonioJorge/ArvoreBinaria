@@ -63,6 +63,9 @@ public class Main {
             JButton botaoLimpar = new JButton("Limpar árvore");
             botaoLimpar.addActionListener(acaoLimpar);
 
+            JButton botaoInverter = new JButton("Inverter subárvores");
+            botaoInverter.addActionListener(criarAcaoInverter(frame, arvore, painelArvore, houveAlteracao));
+
             JButton botaoHistorico = new JButton("Histórico");
             botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao));
 
@@ -70,6 +73,7 @@ public class Main {
             painelAcoes.add(botaoInserir);
             painelAcoes.add(botaoCaminhonamento);
             painelAcoes.add(botaoLimpar);
+            painelAcoes.add(botaoInverter);
             painelAcoes.add(botaoHistorico);
             frame.add(painelAcoes, BorderLayout.NORTH);
 
@@ -211,6 +215,24 @@ public class Main {
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(frame, "Não foi possível carregar o histórico.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
+        };
+    }
+
+    private static ActionListener criarAcaoInverter(
+            JFrame frame,
+            ArvoreBinaria arvore,
+            PainelPrincipal painelArvore,
+            boolean[] houveAlteracao
+    ) {
+        return e -> {
+            if (arvore.raiz == null) {
+                JOptionPane.showMessageDialog(frame, "A árvore está vazia.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            arvore.inverterSubarvores();
+            houveAlteracao[0] = true;
+            painelArvore.atualizarLayout();
         };
     }
 
