@@ -13,15 +13,6 @@ class ArvoreBinaria {
     }
 
     No raiz;
-    private boolean rebalanceamentoAtivo = true;
-
-    boolean isRebalanceamentoAtivo() {
-        return rebalanceamentoAtivo;
-    }
-
-    void setRebalanceamentoAtivo(boolean rebalanceamentoAtivo) {
-        this.rebalanceamentoAtivo = rebalanceamentoAtivo;
-    }
 
     void carregarDeSerializacao(String serializacao) {
         if (serializacao == null) {
@@ -111,12 +102,7 @@ class ArvoreBinaria {
     boolean inserir(int valor) {
         InsercaoResultado resultado = new InsercaoResultado();
 
-        if (rebalanceamentoAtivo) {
-            raiz = inserirAVL(raiz, valor, resultado);
-        } else {
-            raiz = inserirSemRebalanceamento(raiz, valor, resultado);
-        }
-
+        raiz = inserirSemRebalanceamento(raiz, valor, resultado);
         return resultado.inseriu;
     }
 
@@ -324,24 +310,6 @@ class ArvoreBinaria {
         return no;
     }
 
-    private No inserirAVL(No no, int valor, InsercaoResultado resultado) {
-        if (no == null) {
-            resultado.inseriu = true;
-            return new No(valor);
-        }
-
-        if (valor < no.valor) {
-            no.esquerda = inserirAVL(no.esquerda, valor, resultado);
-        } else if (valor > no.valor) {
-            no.direita = inserirAVL(no.direita, valor, resultado);
-        } else {
-            return no;
-        }
-
-        atualizarAltura(no);
-        return rebalancear(no);
-    }
-
     private No inserirSemRebalanceamento(No no, int valor, InsercaoResultado resultado) {
         if (no == null) {
             resultado.inseriu = true;
@@ -370,58 +338,6 @@ class ArvoreBinaria {
         }
 
         no.altura = 1 + Math.max(altura(no.esquerda), altura(no.direita));
-    }
-
-    private int fatorBalanceamento(No no) {
-        if (no == null) {
-            return 0;
-        }
-
-        return altura(no.esquerda) - altura(no.direita);
-    }
-
-    private No rebalancear(No no) {
-        int fator = fatorBalanceamento(no);
-
-        if (fator > 1) {
-            if (fatorBalanceamento(no.esquerda) < 0) {
-                no.esquerda = rotacaoEsquerda(no.esquerda);
-            }
-            return rotacaoDireita(no);
-        }
-
-        if (fator < -1) {
-            if (fatorBalanceamento(no.direita) > 0) {
-                no.direita = rotacaoDireita(no.direita);
-            }
-            return rotacaoEsquerda(no);
-        }
-
-        return no;
-    }
-
-    private No rotacaoDireita(No no) {
-        No novaRaiz = no.esquerda;
-        No subArvoreDireita = novaRaiz.direita;
-
-        novaRaiz.direita = no;
-        no.esquerda = subArvoreDireita;
-
-        atualizarAltura(no);
-        atualizarAltura(novaRaiz);
-        return novaRaiz;
-    }
-
-    private No rotacaoEsquerda(No no) {
-        No novaRaiz = no.direita;
-        No subArvoreEsquerda = novaRaiz.esquerda;
-
-        novaRaiz.esquerda = no;
-        no.direita = subArvoreEsquerda;
-
-        atualizarAltura(no);
-        atualizarAltura(novaRaiz);
-        return novaRaiz;
     }
 
     private int lerInteiro(String texto, Cursor cursor) {
