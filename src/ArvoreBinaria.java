@@ -111,7 +111,13 @@ class ArvoreBinaria {
     }
 
     void inverterSubarvores() {
-        inverterSubarvores(raiz);
+        if (raiz == null) {
+            return;
+        }
+
+        inverterSubarvores(raiz.esquerda);
+        inverterSubarvores(raiz.direita);
+        atualizarAltura(raiz);
     }
 
     private boolean ehCheia() {
