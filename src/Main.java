@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -106,7 +108,7 @@ public class Main {
             boolean[] houveAlteracao
     ) {
         return e -> {
-            String entrada = JOptionPane.showInputDialog(frame, "Digite um valor inteiro:", "Inserir nó", JOptionPane.QUESTION_MESSAGE);
+            String entrada = JOptionPane.showInputDialog(frame, "Digite um ou mais valores inteiros separados por vírgula:", "Inserir nó", JOptionPane.QUESTION_MESSAGE);
 
             if (entrada == null) {
                 return;
@@ -118,19 +120,66 @@ public class Main {
                 return;
             }
 
-            try {
-                int valor = Integer.parseInt(entrada);
-                boolean inseriu = arvore.inserir(valor);
+            String[] partes = entrada.split(",");
+            Set<Integer> valoresProcessados = new HashSet<>();
+            int inseridosComSucesso = 0;
+            int jaExistiam = 0;
+            int duplicadosNaEntrada = 0;
+            StringBuilder erros = new StringBuilder();
 
-                if (!inseriu) {
-                    JOptionPane.showMessageDialog(frame, "Esse valor já existe na árvore.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                    return;
+            for (String parte : partes) {
+                parte = parte.trim();
+                if (parte.isEmpty()) {
+                    continue;
                 }
 
+                try {
+                    int valor = Integer.parseInt(parte);
+
+                    if (!valoresProcessados.add(valor)) {
+                        duplicadosNaEntrada++;
+                        continue;
+                    }
+
+                    if (arvore.inserir(valor)) {
+                        inseridosComSucesso++;
+                    } else {
+                        jaExistiam++;
+                    }
+                } catch (NumberFormatException ex) {
+                    if (erros.length() > 0) {
+                        erros.append(", ");
+                    }
+                    erros.append("'").append(parte).append("'");
+                }
+            }
+
+            if (inseridosComSucesso == 0 && jaExistiam == 0 && duplicadosNaEntrada == 0 && erros.length() > 0) {
+                JOptionPane.showMessageDialog(frame, "Valores inválidos: " + erros.toString(), "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (inseridosComSucesso > 0) {
                 houveAlteracao[0] = true;
                 painelArvore.atualizarLayout();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Use apenas números inteiros.", "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+
+            StringBuilder mensagem = new StringBuilder();
+            if (inseridosComSucesso > 0) {
+                mensagem.append("Inseridos com sucesso: ").append(inseridosComSucesso).append("\n");
+            }
+            if (jaExistiam > 0) {
+                mensagem.append("Já existiam na árvore: ").append(jaExistiam).append("\n");
+            }
+            if (duplicadosNaEntrada > 0) {
+                mensagem.append("Duplicados na entrada: ").append(duplicadosNaEntrada).append("\n");
+            }
+            if (erros.length() > 0) {
+                mensagem.append("Valores inválidos: ").append(erros.toString()).append("\n");
+            }
+
+            if (mensagem.length() > 0) {
+                JOptionPane.showMessageDialog(frame, mensagem.toString().trim(), "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
             }
         };
     }
