@@ -88,11 +88,13 @@ class PainelPrincipal extends JPanel {
                 int nivel = arvore.nivelDoNo(noSelecionado);
                 int profundidade = arvore.profundidadeDoNo(noSelecionado);
                 int altura = arvore.alturaDoNo(noSelecionado);
+                int fatorBalanceamento = arvore.fatorBalanceamentoDo(noSelecionado);
 
                 String mensagem = "Nó: " + noSelecionado.valor
                         + "\nNível do nó: " + nivel
                         + "\nProfundidade do nó: " + profundidade
-                        + "\nAltura do nó: " + altura;
+                        + "\nAltura do nó: " + altura
+                        + "\nFator de balanceamento: " + fatorBalanceamento;
 
                 JOptionPane.showMessageDialog(
                         PainelPrincipal.this,

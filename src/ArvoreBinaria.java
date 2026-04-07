@@ -13,6 +13,26 @@ class ArvoreBinaria {
     }
 
     No raiz;
+    private boolean balanceamentoAtivo;
+
+    ArvoreBinaria() {
+        this.balanceamentoAtivo = false;
+    }
+
+    boolean isBalanceamentoAtivo() {
+        return balanceamentoAtivo;
+    }
+
+    void setBalanceamentoAtivo(boolean ativo) {
+        if (this.balanceamentoAtivo == ativo) {
+            return;
+        }
+
+        this.balanceamentoAtivo = ativo;
+        if (ativo && raiz != null) {
+            raiz = balancearSubarvore(raiz);
+        }
+    }
 
     void carregarDeSerializacao(String serializacao) {
         if (serializacao == null) {
@@ -69,6 +89,14 @@ class ArvoreBinaria {
         }
 
         return alturaNo(no);
+    }
+
+    int fatorBalanceamentoDo(No no) {
+        if (no == null) {
+            return 0;
+        }
+
+        return fatorBalanceamento(no);
     }
 
     String tipoEstrutural() {
@@ -349,7 +377,75 @@ class ArvoreBinaria {
         }
 
         atualizarAltura(no);
+
+        if (balanceamentoAtivo) {
+            return balancearNo(no);
+        }
+
         return no;
+    }
+
+    private No balancearSubarvore(No no) {
+        if (no == null) {
+            return null;
+        }
+
+        no.esquerda = balancearSubarvore(no.esquerda);
+        no.direita = balancearSubarvore(no.direita);
+        atualizarAltura(no);
+        return balancearNo(no);
+    }
+
+    private No balancearNo(No no) {
+        int fatorBalanceamento = fatorBalanceamento(no);
+
+        if (fatorBalanceamento > 1) {
+            if (fatorBalanceamento(no.esquerda) < 0) {
+                no.esquerda = rotacaoEsquerda(no.esquerda);
+            }
+            return rotacaoDireita(no);
+        }
+
+        if (fatorBalanceamento < -1) {
+            if (fatorBalanceamento(no.direita) > 0) {
+                no.direita = rotacaoDireita(no.direita);
+            }
+            return rotacaoEsquerda(no);
+        }
+
+        return no;
+    }
+
+    private int fatorBalanceamento(No no) {
+        if (no == null) {
+            return 0;
+        }
+
+        return altura(no.esquerda) - altura(no.direita);
+    }
+
+    private No rotacaoDireita(No no) {
+        No novaRaiz = no.esquerda;
+        No subarvoreTemporaria = novaRaiz.direita;
+
+        novaRaiz.direita = no;
+        no.esquerda = subarvoreTemporaria;
+
+        atualizarAltura(no);
+        atualizarAltura(novaRaiz);
+        return novaRaiz;
+    }
+
+    private No rotacaoEsquerda(No no) {
+        No novaRaiz = no.direita;
+        No subarvoreTemporaria = novaRaiz.esquerda;
+
+        novaRaiz.esquerda = no;
+        no.direita = subarvoreTemporaria;
+
+        atualizarAltura(no);
+        atualizarAltura(novaRaiz);
+        return novaRaiz;
     }
 
     private int altura(No no) {

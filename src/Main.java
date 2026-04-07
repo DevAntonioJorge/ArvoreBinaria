@@ -69,12 +69,21 @@ public class Main {
             JButton botaoHistorico = new JButton("Histórico");
             botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao));
 
+            JButton botaoBalanceamento = new JButton(textoBotaoBalanceamento(arvore));
+            botaoBalanceamento.addActionListener(e -> {
+                boolean novoEstado = !arvore.isBalanceamentoAtivo();
+                arvore.setBalanceamentoAtivo(novoEstado);
+                botaoBalanceamento.setText(textoBotaoBalanceamento(arvore));
+                painelArvore.atualizarLayout();
+            });
+
             JPanel painelAcoes = new JPanel();
             painelAcoes.add(botaoInserir);
             painelAcoes.add(botaoCaminhonamento);
             painelAcoes.add(botaoLimpar);
             painelAcoes.add(botaoInverter);
             painelAcoes.add(botaoHistorico);
+            painelAcoes.add(botaoBalanceamento);
             frame.add(painelAcoes, BorderLayout.NORTH);
 
             menuArvore.add(itemInserir);
@@ -288,5 +297,9 @@ public class Main {
         }
 
         return normalizado.substring(0, Main.TAMANHO_MAXIMO_PREVIEW_HISTORICO) + "...";
+    }
+
+    private static String textoBotaoBalanceamento(ArvoreBinaria arvore) {
+        return "Balanceamento AVL: " + (arvore.isBalanceamentoAtivo() ? "ON" : "OFF");
     }
 }
