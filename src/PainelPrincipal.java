@@ -42,6 +42,12 @@ class PainelPrincipal extends JPanel {
     private Rectangle areaLegenda = new Rectangle(0, 0, 0, 0);
     private Point ultimoPontoArraste;
     private final Map<No, int[]> posicoesUltimoDesenho = new HashMap<>();
+    private final Map<Integer, int[]> posicoesAnterioresPorValor = new HashMap<>();
+    private final Map<Integer, int[]> posicoesAtuaisPorValor = new HashMap<>();
+    private javax.swing.Timer timerAnimacao;
+    private double progressoAnimacao = 1.0; // 1.0 significa sem animação (estado final)
+    private static final int DURACAO_ANIMACAO_MS = 600;
+    private static final int FRAME_RATE_MS = 16; // aprox 60 fps
 
     public PainelPrincipal(ArvoreBinaria arvore) {
         this.arvore = arvore;
@@ -149,8 +155,34 @@ class PainelPrincipal extends JPanel {
     }
 
     void atualizarLayout() {
+        if (progressoAnimacao < 1.0 && timerAnimacao != null && timerAnimacao.isRunning()) {
+            timerAnimacao.stop();
+        }
+
+        salvarPosicoesAtuaisComoAnteriores();
+        progressoAnimacao = 0.0;
+
+        if (timerAnimacao == null) {
+            timerAnimacao = new javax.swing.Timer(FRAME_RATE_MS, e -> {
+                progressoAnimacao += (double) FRAME_RATE_MS / DURACAO_ANIMACAO_MS;
+                if (progressoAnimacao >= 1.0) {
+                    progressoAnimacao = 1.0;
+                    timerAnimacao.stop();
+                }
+                repaint();
+            });
+        }
+        timerAnimacao.start();
+
         revalidate();
         repaint();
+    }
+
+    private void salvarPosicoesAtuaisComoAnteriores() {
+        posicoesAnterioresPorValor.clear();
+        for (Map.Entry<Integer, int[]> entry : posicoesAtuaisPorValor.entrySet()) {
+            posicoesAnterioresPorValor.put(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
@@ -174,6 +206,12 @@ class PainelPrincipal extends JPanel {
         MetricasLayout metricas = new MetricasLayout();
         preencherPosicoesEmOrdem(arvore.raiz, 0, metricas, posicoes);
         posicoesUltimoDesenho.putAll(posicoes);
+
+        // Atualiza o mapa de posições por valor para animação
+        posicoesAtuaisPorValor.clear();
+        for (Map.Entry<No, int[]> entry : posicoes.entrySet()) {
+            posicoesAtuaisPorValor.put(entry.getKey().valor, entry.getValue());
+        }
 
         int larguraLogica = calcularLarguraLogica(metricas.quantidadeNos);
         int alturaLogica = calcularAlturaLogica(metricas.profundidadeMaxima + 1);
@@ -286,21 +324,49 @@ class PainelPrincipal extends JPanel {
     }
 
     private void desenharNo(Graphics2D g2, No no, Map<No, int[]> posicoes) {
-        int[] posicaoNo = posicoes.get(no);
-        int x = posicaoNo[0];
-        int y = posicaoNo[1];
+        int[] posAlvo = posicoes.get(no);
+        int xAlvo = posAlvo[0];
+        int yAlvo = posAlvo[1];
+
+        int x, y;
+        if (progressoAnimacao < 1.0 && posicoesAnterioresPorValor.containsKey(no.valor)) {
+            int[] posAnt = posicoesAnterioresPorValor.get(no.valor);
+            x = (int) (posAnt[0] + (xAlvo - posAnt[0]) * progressoAnimacao);
+            y = (int) (posAnt[1] + (yAlvo - posAnt[1]) * progressoAnimacao);
+        } else {
+            x = xAlvo;
+            y = yAlvo;
+        }
 
         if (no.esquerda != null) {
-            int[] posicaoFilho = posicoes.get(no.esquerda);
+            int[] posFilhoAlvo = posicoes.get(no.esquerda);
+            int xf, yf;
+            if (progressoAnimacao < 1.0 && posicoesAnterioresPorValor.containsKey(no.esquerda.valor)) {
+                int[] posAnt = posicoesAnterioresPorValor.get(no.esquerda.valor);
+                xf = (int) (posAnt[0] + (posFilhoAlvo[0] - posAnt[0]) * progressoAnimacao);
+                yf = (int) (posAnt[1] + (posFilhoAlvo[1] - posAnt[1]) * progressoAnimacao);
+            } else {
+                xf = posFilhoAlvo[0];
+                yf = posFilhoAlvo[1];
+            }
             g2.setColor(Color.GRAY);
-            desenharArestaDiagonal(g2, x, y, posicaoFilho[0], posicaoFilho[1]);
+            desenharArestaDiagonal(g2, x, y, xf, yf);
             desenharNo(g2, no.esquerda, posicoes);
         }
 
         if (no.direita != null) {
-            int[] posicaoFilho = posicoes.get(no.direita);
+            int[] posFilhoAlvo = posicoes.get(no.direita);
+            int xf, yf;
+            if (progressoAnimacao < 1.0 && posicoesAnterioresPorValor.containsKey(no.direita.valor)) {
+                int[] posAnt = posicoesAnterioresPorValor.get(no.direita.valor);
+                xf = (int) (posAnt[0] + (posFilhoAlvo[0] - posAnt[0]) * progressoAnimacao);
+                yf = (int) (posAnt[1] + (posFilhoAlvo[1] - posAnt[1]) * progressoAnimacao);
+            } else {
+                xf = posFilhoAlvo[0];
+                yf = posFilhoAlvo[1];
+            }
             g2.setColor(Color.GRAY);
-            desenharArestaDiagonal(g2, x, y, posicaoFilho[0], posicaoFilho[1]);
+            desenharArestaDiagonal(g2, x, y, xf, yf);
             desenharNo(g2, no.direita, posicoes);
         }
 
