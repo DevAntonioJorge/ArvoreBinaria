@@ -33,10 +33,28 @@ public class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            String[] opcoes = {"Árvore Binária", "AVL"};
+            int escolha = JOptionPane.showOptionDialog(
+                    null,
+                    "Escolha o tipo de árvore:",
+                    "Menu inicial",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opcoes,
+                    opcoes[0]
+            );
+
+            if (escolha < 0) {
+                return;
+            }
+
             ArvoreBinaria arvore = new ArvoreBinaria();
+            arvore.setBalanceamentoAtivo(escolha == 1);
+
             final boolean[] houveAlteracao = {false};
 
-            JFrame frame = new JFrame("Árvore Binária");
+            JFrame frame = new JFrame(escolha == 1 ? "Árvore AVL" : "Árvore Binária");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new BorderLayout());
 
@@ -71,21 +89,12 @@ public class Main {
             JButton botaoHistorico = new JButton("Histórico");
             botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao));
 
-            JButton botaoBalanceamento = new JButton(textoBotaoBalanceamento(arvore));
-            botaoBalanceamento.addActionListener(e -> {
-                boolean novoEstado = !arvore.isBalanceamentoAtivo();
-                arvore.setBalanceamentoAtivo(novoEstado);
-                botaoBalanceamento.setText(textoBotaoBalanceamento(arvore));
-                painelArvore.atualizarLayout();
-            });
-
             JPanel painelAcoes = new JPanel();
             painelAcoes.add(botaoInserir);
             painelAcoes.add(botaoCaminhonamento);
             painelAcoes.add(botaoLimpar);
             painelAcoes.add(botaoInverter);
             painelAcoes.add(botaoHistorico);
-            painelAcoes.add(botaoBalanceamento);
             frame.add(painelAcoes, BorderLayout.NORTH);
 
             menuArvore.add(itemInserir);
@@ -147,14 +156,14 @@ public class Main {
                         jaExistiam++;
                     }
                 } catch (NumberFormatException ex) {
-                    if (erros.length() > 0) {
+                    if (!erros.isEmpty()) {
                         erros.append(", ");
                     }
                     erros.append("'").append(parte).append("'");
                 }
             }
 
-            if (inseridosComSucesso == 0 && jaExistiam == 0 && duplicadosNaEntrada == 0 && erros.length() > 0) {
+            if (inseridosComSucesso == 0 && jaExistiam == 0 && duplicadosNaEntrada == 0 && !erros.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, "Valores inválidos: " + erros.toString(), "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -174,11 +183,11 @@ public class Main {
             if (duplicadosNaEntrada > 0) {
                 mensagem.append("Duplicados na entrada: ").append(duplicadosNaEntrada).append("\n");
             }
-            if (erros.length() > 0) {
+            if (!erros.isEmpty()) {
                 mensagem.append("Valores inválidos: ").append(erros.toString()).append("\n");
             }
 
-            if (mensagem.length() > 0) {
+            if (!mensagem.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, mensagem.toString().trim(), "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
             }
         };
