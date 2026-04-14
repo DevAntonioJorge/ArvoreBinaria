@@ -12,11 +12,26 @@ class ArvoreBinaria {
         boolean inseriu;
     }
 
+    public interface ListenerRotacao {
+        void aoRotacionar(String mensagem);
+    }
+
     No raiz;
     private boolean balanceamentoAtivo;
+    private ListenerRotacao listenerRotacao;
 
     ArvoreBinaria() {
         this.balanceamentoAtivo = false;
+    }
+
+    void setListenerRotacao(ListenerRotacao listener) {
+        this.listenerRotacao = listener;
+    }
+
+    private void notificarRotacao(String mensagem) {
+        if (listenerRotacao != null) {
+            listenerRotacao.aoRotacionar(mensagem);
+        }
     }
 
     boolean isBalanceamentoAtivo() {
@@ -401,16 +416,22 @@ class ArvoreBinaria {
 
         if (fatorBalanceamento > 1) {
             if (fatorBalanceamento(no.esquerda) < 0) {
+                notificarRotacao("Rotação Dupla Direita (E-D): Aplicando Rotação Esquerda no filho à esquerda (" + no.esquerda.valor + ") de " + no.valor);
                 no.esquerda = rotacaoEsquerda(no.esquerda);
             }
-            return rotacaoDireita(no);
+            notificarRotacao("Aplicando Rotação Direita em " + no.valor);
+            No novaRaiz = rotacaoDireita(no);
+            return novaRaiz;
         }
 
         if (fatorBalanceamento < -1) {
             if (fatorBalanceamento(no.direita) > 0) {
+                notificarRotacao("Rotação Dupla Esquerda (D-E): Aplicando Rotação Direita no filho à direita (" + no.direita.valor + ") de " + no.valor);
                 no.direita = rotacaoDireita(no.direita);
             }
-            return rotacaoEsquerda(no);
+            notificarRotacao("Aplicando Rotação Esquerda em " + no.valor);
+            No novaRaiz = rotacaoEsquerda(no);
+            return novaRaiz;
         }
 
         return no;

@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -59,20 +60,54 @@ public class Main {
             frame.setLayout(new BorderLayout());
 
             PainelPrincipal painelArvore = new PainelPrincipal(arvore);
+
+            Semaphore semaforoRotacao = new Semaphore(0);
+            JLabel labelStatus = new JLabel(" ");
+            JButton botaoProximo = new JButton("Próximo Passo");
+            botaoProximo.setVisible(false);
+            botaoProximo.addActionListener(e -> semaforoRotacao.release());
+
+            arvore.setListenerRotacao(mensagem -> {
+                try {
+                    SwingUtilities.invokeLater(() -> {
+                        labelStatus.setText(mensagem);
+                        botaoProximo.setVisible(true);
+                        painelArvore.atualizarLayout();
+                    });
+                    semaforoRotacao.acquire();
+                    SwingUtilities.invokeLater(() -> {
+                        botaoProximo.setVisible(false);
+                        labelStatus.setText(" ");
+                    });
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+
             frame.add(painelArvore, BorderLayout.CENTER);
+
+            JPanel painelStatus = new JPanel(new BorderLayout());
+            painelStatus.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                    javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, java.awt.Color.LIGHT_GRAY),
+                    javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            ));
+            labelStatus.setFont(labelStatus.getFont().deriveFont(java.awt.Font.BOLD));
+            painelStatus.add(labelStatus, BorderLayout.CENTER);
+            painelStatus.add(botaoProximo, BorderLayout.EAST);
+            frame.add(painelStatus, BorderLayout.SOUTH);
 
             JMenuBar barraMenu = new JMenuBar();
             JMenu menuArvore = new JMenu("Árvore");
 
             JMenuItem itemInserir = new JMenuItem("Inserir nó");
-            ActionListener acaoInserir = criarAcaoInserir(frame, arvore, painelArvore, houveAlteracao);
+            AcaoComComponentes acaoInserir = criarAcaoInserir(frame, arvore, painelArvore, houveAlteracao);
             itemInserir.addActionListener(acaoInserir);
 
             JMenuItem itemVisualizar = new JMenuItem("Visualizar árvore");
             itemVisualizar.addActionListener(e -> painelArvore.atualizarLayout());
 
             JMenuItem itemLimpar = new JMenuItem("Limpar árvore");
-            ActionListener acaoLimpar = criarAcaoLimpar(frame, arvore, painelArvore, houveAlteracao);
+            AcaoComComponentes acaoLimpar = criarAcaoLimpar(frame, arvore, painelArvore, houveAlteracao);
             itemLimpar.addActionListener(acaoLimpar);
 
             JButton botaoInserir = new JButton("Inserir nó");
@@ -88,6 +123,10 @@ public class Main {
 
             JButton botaoHistorico = new JButton("Histórico");
             botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao));
+
+            java.util.List<javax.swing.JComponent> componentesAcao = java.util.List.of(
+                    itemInserir, itemLimpar, botaoInserir, botaoCaminhonamento, botaoLimpar, botaoInverter, botaoHistorico
+            );
 
             JPanel painelAcoes = new JPanel();
             painelAcoes.add(botaoInserir);
@@ -107,122 +146,167 @@ public class Main {
             frame.setLocationRelativeTo(null);
             painelArvore.atualizarLayout();
             frame.setVisible(true);
+
+            acaoInserir.setComponentes(componentesAcao);
+            acaoLimpar.setComponentes(componentesAcao);
         });
     }
 
-    private static ActionListener criarAcaoInserir(
+    private interface AcaoComComponentes extends ActionListener {
+        void setComponentes(java.util.List<javax.swing.JComponent> componentes);
+    }
+
+    private static AcaoComComponentes criarAcaoInserir(
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
             boolean[] houveAlteracao
     ) {
-        return e -> {
-            String entrada = JOptionPane.showInputDialog(frame, "Digite um ou mais valores inteiros separados por vírgula:", "Inserir nó", JOptionPane.QUESTION_MESSAGE);
+        return new AcaoComComponentes() {
+            private java.util.List<javax.swing.JComponent> componentes;
 
-            if (entrada == null) {
-                return;
+            @Override
+            public void setComponentes(java.util.List<javax.swing.JComponent> componentes) {
+                this.componentes = componentes;
             }
 
-            entrada = entrada.trim();
-            if (entrada.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Digite um valor válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                String entrada = JOptionPane.showInputDialog(frame, "Digite um ou mais valores inteiros separados por vírgula:", "Inserir nó", JOptionPane.QUESTION_MESSAGE);
 
-            String[] partes = entrada.split(",");
-            Set<Integer> valoresProcessados = new HashSet<>();
-            int inseridosComSucesso = 0;
-            int jaExistiam = 0;
-            int duplicadosNaEntrada = 0;
-            StringBuilder erros = new StringBuilder();
-
-            for (String parte : partes) {
-                parte = parte.trim();
-                if (parte.isEmpty()) {
-                    continue;
+                if (entrada == null) {
+                    return;
                 }
 
-                try {
-                    int valor = Integer.parseInt(parte);
-
-                    if (!valoresProcessados.add(valor)) {
-                        duplicadosNaEntrada++;
-                        continue;
-                    }
-
-                    if (arvore.inserir(valor)) {
-                        inseridosComSucesso++;
-                    } else {
-                        jaExistiam++;
-                    }
-                } catch (NumberFormatException ex) {
-                    if (!erros.isEmpty()) {
-                        erros.append(", ");
-                    }
-                    erros.append("'").append(parte).append("'");
+                entrada = entrada.trim();
+                if (entrada.isEmpty()) {
+                    JOptionPane.showMessageDialog(frame, "Digite um valor válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
                 }
-            }
 
-            if (inseridosComSucesso == 0 && jaExistiam == 0 && duplicadosNaEntrada == 0 && !erros.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Valores inválidos: " + erros.toString(), "Erro", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+                if (componentes != null) componentes.forEach(c -> c.setEnabled(false));
 
-            if (inseridosComSucesso > 0) {
-                houveAlteracao[0] = true;
-                painelArvore.atualizarLayout();
-            }
+                final String entradaFinal = entrada;
+                new Thread(() -> {
+                    try {
+                        String[] partes = entradaFinal.split(",");
+                        Set<Integer> valoresProcessados = new HashSet<>();
+                        int inseridosComSucesso = 0;
+                        int jaExistiam = 0;
+                        int duplicadosNaEntrada = 0;
+                        StringBuilder erros = new StringBuilder();
 
-            StringBuilder mensagem = new StringBuilder();
-            if (inseridosComSucesso > 0) {
-                mensagem.append("Inseridos com sucesso: ").append(inseridosComSucesso).append("\n");
-            }
-            if (jaExistiam > 0) {
-                mensagem.append("Já existiam na árvore: ").append(jaExistiam).append("\n");
-            }
-            if (duplicadosNaEntrada > 0) {
-                mensagem.append("Duplicados na entrada: ").append(duplicadosNaEntrada).append("\n");
-            }
-            if (!erros.isEmpty()) {
-                mensagem.append("Valores inválidos: ").append(erros.toString()).append("\n");
-            }
+                        for (String parte : partes) {
+                            parte = parte.trim();
+                            if (parte.isEmpty()) {
+                                continue;
+                            }
 
-            if (!mensagem.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, mensagem.toString().trim(), "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
+                            try {
+                                int valor = Integer.parseInt(parte);
+
+                                if (!valoresProcessados.add(valor)) {
+                                    duplicadosNaEntrada++;
+                                    continue;
+                                }
+
+                                if (arvore.inserir(valor)) {
+                                    inseridosComSucesso++;
+                                    SwingUtilities.invokeLater(painelArvore::atualizarLayout);
+                                } else {
+                                    jaExistiam++;
+                                }
+                            } catch (NumberFormatException ex) {
+                                if (!erros.isEmpty()) {
+                                    erros.append(", ");
+                                }
+                                erros.append("'").append(parte).append("'");
+                            }
+                        }
+
+                        final int finalInseridosComSucesso = inseridosComSucesso;
+                        final int finalJaExistiam = jaExistiam;
+                        final int finalDuplicadosNaEntrada = duplicadosNaEntrada;
+                        final String finalErros = erros.toString();
+
+                        SwingUtilities.invokeLater(() -> {
+                            if (finalInseridosComSucesso == 0 && finalJaExistiam == 0 && finalDuplicadosNaEntrada == 0 && !finalErros.isEmpty()) {
+                                JOptionPane.showMessageDialog(frame, "Valores inválidos: " + finalErros, "Erro", JOptionPane.ERROR_MESSAGE);
+                                if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
+                                return;
+                            }
+
+                            if (finalInseridosComSucesso > 0) {
+                                houveAlteracao[0] = true;
+                                painelArvore.atualizarLayout();
+                            }
+
+                            StringBuilder mensagem = new StringBuilder();
+                            if (finalJaExistiam > 0) {
+                                mensagem.append("Já existiam na árvore: ").append(finalJaExistiam).append("\n");
+                            }
+                            if (finalDuplicadosNaEntrada > 0) {
+                                mensagem.append("Duplicados na entrada: ").append(finalDuplicadosNaEntrada).append("\n");
+                            }
+                            if (!finalErros.isEmpty()) {
+                                mensagem.append("Valores inválidos: ").append(finalErros).append("\n");
+                            }
+
+                            if (!mensagem.isEmpty()) {
+                                JOptionPane.showMessageDialog(frame, mensagem.toString().trim(), "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                            if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
+                        });
+                    } catch (Exception ex) {
+                        SwingUtilities.invokeLater(() -> {
+                            if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
+                        });
+                    }
+                }).start();
             }
         };
     }
 
-    private static ActionListener criarAcaoLimpar(
+    private static AcaoComComponentes criarAcaoLimpar(
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
             boolean[] houveAlteracao
     ) {
-        return e -> {
-            int confirmacao = JOptionPane.showConfirmDialog(
-                    frame,
-                    "Deseja realmente limpar a árvore?",
-                    "Confirmar limpeza",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
+        return new AcaoComComponentes() {
+            private java.util.List<javax.swing.JComponent> componentes;
 
-            if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) try {
-                String serializacao = arvore.serializarParenteses();
-                Path pastaArvores = Path.of("arvores");
-                Files.createDirectories(pastaArvores);
+            @Override
+            public void setComponentes(java.util.List<javax.swing.JComponent> componentes) {
+                this.componentes = componentes;
+            }
 
-                String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
-                Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
-                Files.writeString(caminhoArquivo, serializacao);
-                JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
-            } finally {
-                arvore.limpar();
-                houveAlteracao[0] = false;
-                painelArvore.atualizarLayout();
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                int confirmacao = JOptionPane.showConfirmDialog(
+                        frame,
+                        "Deseja realmente limpar a árvore?",
+                        "Confirmar limpeza",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) try {
+                    String serializacao = arvore.serializarParenteses();
+                    Path pastaArvores = Path.of("arvores");
+                    Files.createDirectories(pastaArvores);
+
+                    String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
+                    Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
+                    Files.writeString(caminhoArquivo, serializacao);
+                    JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    arvore.limpar();
+                    houveAlteracao[0] = false;
+                    painelArvore.atualizarLayout();
+                }
             }
         };
     }
