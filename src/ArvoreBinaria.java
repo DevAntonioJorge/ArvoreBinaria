@@ -4,6 +4,50 @@ import java.util.Deque;
 import java.util.List;
 
 class ArvoreBinaria {
+    public static record ResultadoProcessamento(
+            int inseridosComSucesso,
+            int jaExistiam,
+            int duplicadosNaEntrada,
+            List<String> erros
+    ) {}
+
+    public ResultadoProcessamento inserirMassa(String entrada, Runnable aoInserir) {
+        if (entrada == null || entrada.trim().isEmpty()) {
+            return new ResultadoProcessamento(0, 0, 0, List.of());
+        }
+
+        String[] partes = entrada.split(",");
+        java.util.Set<Integer> valoresProcessados = new java.util.HashSet<>();
+        int inseridosComSucesso = 0;
+        int jaExistiam = 0;
+        int duplicadosNaEntrada = 0;
+        List<String> erros = new ArrayList<>();
+
+        for (String parte : partes) {
+            parte = parte.trim();
+            if (parte.isEmpty()) continue;
+
+            try {
+                int valor = Integer.parseInt(parte);
+                if (!valoresProcessados.add(valor)) {
+                    duplicadosNaEntrada++;
+                    continue;
+                }
+
+                if (inserir(valor)) {
+                    inseridosComSucesso++;
+                    if (aoInserir != null) aoInserir.run();
+                } else {
+                    jaExistiam++;
+                }
+            } catch (NumberFormatException ex) {
+                erros.add(parte);
+            }
+        }
+
+        return new ResultadoProcessamento(inseridosComSucesso, jaExistiam, duplicadosNaEntrada, erros);
+    }
+
     private static class Cursor {
         int indice;
     }
