@@ -174,13 +174,8 @@ public class Main {
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 String entrada = JOptionPane.showInputDialog(frame, "Digite um ou mais valores inteiros separados por vírgula:", "Inserir nó", JOptionPane.QUESTION_MESSAGE);
 
-                if (entrada == null) {
-                    return;
-                }
-
-                entrada = entrada.trim();
-                if (entrada.isEmpty()) {
-                    JOptionPane.showMessageDialog(frame, "Digite um valor válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                if (entrada == null || (entrada = entrada.trim()).isEmpty()) {
+                    if (entrada != null) JOptionPane.showMessageDialog(frame, "Digite um valor válido.", "Aviso", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
@@ -189,82 +184,59 @@ public class Main {
                 final String entradaFinal = entrada;
                 new Thread(() -> {
                     try {
-                        String[] partes = entradaFinal.split(",");
-                        Set<Integer> valoresProcessados = new HashSet<>();
-                        int inseridosComSucesso = 0;
-                        int jaExistiam = 0;
-                        int duplicadosNaEntrada = 0;
-                        StringBuilder erros = new StringBuilder();
-
-                        for (String parte : partes) {
-                            parte = parte.trim();
-                            if (parte.isEmpty()) {
-                                continue;
-                            }
-
-                            try {
-                                int valor = Integer.parseInt(parte);
-
-                                if (!valoresProcessados.add(valor)) {
-                                    duplicadosNaEntrada++;
-                                    continue;
-                                }
-
-                                if (arvore.inserir(valor)) {
-                                    inseridosComSucesso++;
-                                    SwingUtilities.invokeLater(painelArvore::atualizarLayout);
-                                } else {
-                                    jaExistiam++;
-                                }
-                            } catch (NumberFormatException ex) {
-                                if (!erros.isEmpty()) {
-                                    erros.append(", ");
-                                }
-                                erros.append("'").append(parte).append("'");
-                            }
-                        }
-
-                        final int finalInseridosComSucesso = inseridosComSucesso;
-                        final int finalJaExistiam = jaExistiam;
-                        final int finalDuplicadosNaEntrada = duplicadosNaEntrada;
-                        final String finalErros = erros.toString();
+                        var res = arvore.inserirMassa(entradaFinal, () -> SwingUtilities.invokeLater(painelArvore::atualizarLayout));
 
                         SwingUtilities.invokeLater(() -> {
-                            if (finalInseridosComSucesso == 0 && finalJaExistiam == 0 && finalDuplicadosNaEntrada == 0 && !finalErros.isEmpty()) {
-                                JOptionPane.showMessageDialog(frame, "Valores inválidos: " + finalErros, "Erro", JOptionPane.ERROR_MESSAGE);
-                                if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
-                                return;
-                            }
-
-                            if (finalInseridosComSucesso > 0) {
-                                houveAlteracao[0] = true;
-                                painelArvore.atualizarLayout();
-                            }
-
-                            StringBuilder mensagem = new StringBuilder();
-                            if (finalJaExistiam > 0) {
-                                mensagem.append("Já existiam na árvore: ").append(finalJaExistiam).append("\n");
-                            }
-                            if (finalDuplicadosNaEntrada > 0) {
-                                mensagem.append("Duplicados na entrada: ").append(finalDuplicadosNaEntrada).append("\n");
-                            }
-                            if (!finalErros.isEmpty()) {
-                                mensagem.append("Valores inválidos: ").append(finalErros).append("\n");
-                            }
-
-                            if (!mensagem.isEmpty()) {
-                                JOptionPane.showMessageDialog(frame, mensagem.toString().trim(), "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
-                            }
-                            if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
+                            processarResultadoInsercao(frame, painelArvore, houveAlteracao, res);
+                            habilitarComponentes(componentes, true);
                         });
                     } catch (Exception ex) {
-                        SwingUtilities.invokeLater(() -> {
-                            if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
-                        });
+                        SwingUtilities.invokeLater(() -> habilitarComponentes(componentes, true));
                     }
                 }).start();
             }
         };
+    }
+
+    private static void processarResultadoInsercao(
+            JFrame frame,
+            PainelPrincipal painelArvore,
+            boolean[] houveAlteracao,
+            ArvoreBinaria.ResultadoProcessamento res
+    ) {
+        boolean apenasErros = res.inseridosComSucesso() == 0
+                && res.jaExistiam() == 0
+                && res.duplicadosNaEntrada() == 0
+                && !res.erros().isEmpty();
+
+        if (apenasErros) {
+            JOptionPane.showMessageDialog(frame, "Valores inválidos: " + String.join(", ", res.erros()), "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (res.inseridosComSucesso() > 0) {
+            houveAlteracao[0] = true;
+            painelArvore.atualizarLayout();
+        }
+
+        String msg = montarMensagemResultadoInsercao(res);
+        if (!msg.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, msg, "Resultado da inserção", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private static String montarMensagemResultadoInsercao(ArvoreBinaria.ResultadoProcessamento res) {
+        StringBuilder msg = new StringBuilder();
+
+        if (res.jaExistiam() > 0) msg.append("Já existiam na árvore: ").append(res.jaExistiam()).append("\n");
+        if (res.duplicadosNaEntrada() > 0) msg.append("Duplicados na entrada: ").append(res.duplicadosNaEntrada()).append("\n");
+        if (!res.erros().isEmpty()) msg.append("Valores inválidos: ").append(String.join(", ", res.erros())).append("\n");
+
+        return msg.toString().trim();
+    }
+
+    private static void habilitarComponentes(java.util.List<javax.swing.JComponent> componentes, boolean habilitado) {
+        if (componentes != null) componentes.forEach(c -> c.setEnabled(habilitado));
     }
 
     private static AcaoComComponentes criarAcaoLimpar(
@@ -439,9 +411,5 @@ public class Main {
         }
 
         return normalizado.substring(0, Main.TAMANHO_MAXIMO_PREVIEW_HISTORICO) + "...";
-    }
-
-    private static String textoBotaoBalanceamento(ArvoreBinaria arvore) {
-        return "Balanceamento AVL: " + (arvore.isBalanceamentoAtivo() ? "ON" : "OFF");
     }
 }
