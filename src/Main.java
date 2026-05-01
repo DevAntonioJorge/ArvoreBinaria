@@ -184,7 +184,15 @@ public class Main {
                 final String entradaFinal = entrada;
                 new Thread(() -> {
                     try {
-                        var res = arvore.inserirMassa(entradaFinal, () -> SwingUtilities.invokeLater(painelArvore::atualizarLayout));
+                        var res = arvore.inserirMassa(entradaFinal, () -> {
+                            // Delay de 1 segundo entre animações
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException ex) {
+                                Thread.currentThread().interrupt();
+                            }
+                            SwingUtilities.invokeLater(painelArvore::atualizarLayout);
+                        });
 
                         SwingUtilities.invokeLater(() -> {
                             processarResultadoInsercao(frame, painelArvore, houveAlteracao, res);
@@ -263,18 +271,44 @@ public class Main {
                         JOptionPane.WARNING_MESSAGE
                 );
 
-                if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) try {
-                    String serializacao = arvore.serializarParenteses();
-                    Path pastaArvores = Path.of("arvores");
-                    Files.createDirectories(pastaArvores);
+                if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) {
+                    // Mostrar histórico antes de salvar e limpar
+                    List<Integer> insercoes = arvore.getHistoricoInsercoes();
+                    List<String> rotacoes = arvore.getHistoricoRotacoes();
 
-                    String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
-                    Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
-                    Files.writeString(caminhoArquivo, serializacao);
-                    JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
-                } finally {
+                    StringBuilder mensagem = new StringBuilder();
+                    mensagem.append("Sequência de Inserções: ");
+                    if (insercoes.isEmpty()) {
+                        mensagem.append("(nenhuma)");
+                    } else {
+                        mensagem.append(insercoes.stream().map(String::valueOf).reduce((a, b) -> a + ", " + b).orElse(""));
+                    }
+                    mensagem.append("\n\nSequência de Rotações:\n");
+                    if (rotacoes.isEmpty()) {
+                        mensagem.append("(nenhuma)");
+                    } else {
+                        for (String rotacao : rotacoes) {
+                            mensagem.append("- ").append(rotacao).append("\n");
+                        }
+                    }
+
+                    JOptionPane.showMessageDialog(frame, mensagem.toString(), "Histórico da Árvore", JOptionPane.INFORMATION_MESSAGE);
+
+                    try {
+                        String serializacao = arvore.serializarParenteses();
+                        Path pastaArvores = Path.of("arvores");
+                        Files.createDirectories(pastaArvores);
+
+                        String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
+                        Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
+                        Files.writeString(caminhoArquivo, serializacao);
+                        JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+
+                if (confirmacao == JOptionPane.YES_OPTION) {
                     arvore.limpar();
                     houveAlteracao[0] = false;
                     painelArvore.atualizarLayout();
