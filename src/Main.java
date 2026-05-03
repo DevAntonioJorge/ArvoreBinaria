@@ -7,19 +7,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Semaphore;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 public class Main {
     private static final DateTimeFormatter FORMATO_NOME_ARQUIVO = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
@@ -188,10 +178,10 @@ public class Main {
 
                         SwingUtilities.invokeLater(() -> {
                             processarResultadoInsercao(frame, painelArvore, houveAlteracao, res);
-                            habilitarComponentes(componentes, true);
+                            habilitarComponentes(componentes);
                         });
                     } catch (Exception ex) {
-                        SwingUtilities.invokeLater(() -> habilitarComponentes(componentes, true));
+                        SwingUtilities.invokeLater(() -> habilitarComponentes(componentes));
                     }
                 }).start();
             }
@@ -235,8 +225,8 @@ public class Main {
         return msg.toString().trim();
     }
 
-    private static void habilitarComponentes(java.util.List<javax.swing.JComponent> componentes, boolean habilitado) {
-        if (componentes != null) componentes.forEach(c -> c.setEnabled(habilitado));
+    private static void habilitarComponentes(List<JComponent> componentes) {
+        if (componentes != null) componentes.forEach(c -> c.setEnabled(true));
     }
 
     private static AcaoComComponentes criarAcaoLimpar(
@@ -246,11 +236,9 @@ public class Main {
             boolean[] houveAlteracao
     ) {
         return new AcaoComComponentes() {
-            private java.util.List<javax.swing.JComponent> componentes;
 
             @Override
             public void setComponentes(java.util.List<javax.swing.JComponent> componentes) {
-                this.componentes = componentes;
             }
 
             @Override

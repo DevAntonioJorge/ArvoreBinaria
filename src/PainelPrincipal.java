@@ -120,7 +120,7 @@ class PainelPrincipal extends JPanel {
                     zoomManual /= FATOR_ZOOM;
                 }
 
-                zoomManual = Math.max(ZOOM_MANUAL_MIN, Math.min(ZOOM_MANUAL_MAX, zoomManual));
+                zoomManual = Math.clamp(zoomManual, ZOOM_MANUAL_MIN, ZOOM_MANUAL_MAX);
                 if (zoomManual == zoomAnterior) {
                     return;
                 }
@@ -180,9 +180,7 @@ class PainelPrincipal extends JPanel {
 
     private void salvarPosicoesAtuaisComoAnteriores() {
         posicoesAnterioresPorValor.clear();
-        for (Map.Entry<Integer, int[]> entry : posicoesAtuaisPorValor.entrySet()) {
-            posicoesAnterioresPorValor.put(entry.getKey(), entry.getValue());
-        }
+        posicoesAnterioresPorValor.putAll(posicoesAtuaisPorValor);
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.Deque;
 import java.util.List;
 
 class ArvoreBinaria {
-    public static record ResultadoProcessamento(
+    public record ResultadoProcessamento(
             int inseridosComSucesso,
             int jaExistiam,
             int duplicadosNaEntrada,
@@ -76,10 +76,6 @@ class ArvoreBinaria {
         if (listenerRotacao != null) {
             listenerRotacao.aoRotacionar(mensagem);
         }
-    }
-
-    boolean isBalanceamentoAtivo() {
-        return balanceamentoAtivo;
     }
 
     void setBalanceamentoAtivo(boolean ativo) {
@@ -464,8 +460,7 @@ class ArvoreBinaria {
                 no.esquerda = rotacaoEsquerda(no.esquerda);
             }
             notificarRotacao("Aplicando Rotação Direita em " + no.valor);
-            No novaRaiz = rotacaoDireita(no);
-            return novaRaiz;
+            return rotacaoDireita(no);
         }
 
         if (fatorBalanceamento < -1) {
@@ -474,8 +469,7 @@ class ArvoreBinaria {
                 no.direita = rotacaoDireita(no.direita);
             }
             notificarRotacao("Aplicando Rotação Esquerda em " + no.valor);
-            No novaRaiz = rotacaoEsquerda(no);
-            return novaRaiz;
+            return rotacaoEsquerda(no);
         }
 
         return no;
