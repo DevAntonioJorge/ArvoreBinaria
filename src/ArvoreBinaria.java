@@ -63,13 +63,9 @@ class ArvoreBinaria {
     No raiz;
     private boolean balanceamentoAtivo;
     private ListenerRotacao listenerRotacao;
-    private List<Integer> historicoInsercoes;
-    private List<String> historicoRotacoes;
 
     ArvoreBinaria() {
         this.balanceamentoAtivo = false;
-        this.historicoInsercoes = new ArrayList<>();
-        this.historicoRotacoes = new ArrayList<>();
     }
 
     void setListenerRotacao(ListenerRotacao listener) {
@@ -77,7 +73,6 @@ class ArvoreBinaria {
     }
 
     private void notificarRotacao(String mensagem) {
-        historicoRotacoes.add(mensagem);
         if (listenerRotacao != null) {
             listenerRotacao.aoRotacionar(mensagem);
         }
@@ -191,16 +186,11 @@ class ArvoreBinaria {
         InsercaoResultado resultado = new InsercaoResultado();
 
         raiz = inserirNo(raiz, valor, resultado);
-        if (resultado.inseriu) {
-            historicoInsercoes.add(valor);
-        }
         return resultado.inseriu;
     }
 
     void limpar() {
         raiz = null;
-        historicoInsercoes.clear();
-        historicoRotacoes.clear();
     }
 
     void inverterSubarvores() {
@@ -554,11 +544,9 @@ class ArvoreBinaria {
         }
     }
 
-    List<Integer> getHistoricoInsercoes() {
-        return new ArrayList<>(historicoInsercoes);
-    }
-
-    List<String> getHistoricoRotacoes() {
-        return new ArrayList<>(historicoRotacoes);
+    private void avancarEspacos(String texto, Cursor cursor) {
+        while (cursor.indice < texto.length() && Character.isWhitespace(texto.charAt(cursor.indice))) {
+            cursor.indice++;
+        }
     }
 }
