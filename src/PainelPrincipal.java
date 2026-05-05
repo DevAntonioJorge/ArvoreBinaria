@@ -156,8 +156,7 @@ class PainelPrincipal extends JPanel {
 
     void atualizarLayout() {
         if (progressoAnimacao < 1.0 && timerAnimacao != null && timerAnimacao.isRunning()) {
-            // Não reiniciar animação se já estiver em andamento
-            return;
+            timerAnimacao.stop();
         }
 
         salvarPosicoesAtuaisComoAnteriores();
