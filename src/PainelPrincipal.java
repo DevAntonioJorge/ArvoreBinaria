@@ -251,6 +251,8 @@ class PainelPrincipal extends JPanel {
     private void desenharLegenda(Graphics2D g2) {
         String legendaTipo = "Tipo da árvore: " + arvore.tipoEstrutural();
         String legendaMetricas = montarLegendaMetricasArvore();
+        String legendaCores = (arvore instanceof ArvoreRedBlack) ? " | Borda Vermelha = No Vermelho" : "";
+        legendaMetricas += legendaCores;
         Font fonteOriginal = g2.getFont();
         Font fonteLegenda = fonteOriginal.deriveFont(Font.BOLD, 12f);
 
@@ -370,8 +372,17 @@ class PainelPrincipal extends JPanel {
 
         g2.setColor(Color.WHITE);
         g2.fillOval(x - RAIO_NO, y - RAIO_NO, RAIO_NO * 2, RAIO_NO * 2);
-        g2.setColor(Color.BLACK);
+
+        if (no.vermelho) {
+            g2.setColor(Color.RED);
+            g2.setStroke(new BasicStroke(3));
+        } else {
+            g2.setColor(Color.BLACK);
+            g2.setStroke(new BasicStroke(1));
+        }
         g2.drawOval(x - RAIO_NO, y - RAIO_NO, RAIO_NO * 2, RAIO_NO * 2);
+        g2.setStroke(new BasicStroke(1));
+        g2.setColor(Color.BLACK);
 
         String valor = String.valueOf(no.valor);
         int larguraTexto = g2.getFontMetrics().stringWidth(valor);

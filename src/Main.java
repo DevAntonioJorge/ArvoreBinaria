@@ -24,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            String[] opcoes = {"Árvore Binária", "AVL"};
+            String[] opcoes = {"Árvore Binária", "AVL", "Red-Black"};
             int escolha = JOptionPane.showOptionDialog(
                     null,
                     "Escolha o tipo de árvore:",
@@ -40,12 +40,22 @@ public class Main {
                 return;
             }
 
-            ArvoreBinaria arvore = new ArvoreBinaria();
-            arvore.setBalanceamentoAtivo(escolha == 1);
+            ArvoreBinaria arvore;
+            String titulo;
+            if (escolha == 2) {
+                arvore = new ArvoreRedBlack();
+                titulo = "Árvore Red-Black";
+            } else if (escolha == 1) {
+                arvore = new ArvoreAVL();
+                titulo = "Árvore AVL";
+            } else {
+                arvore = new ArvoreBinaria();
+                titulo = "Árvore Binária";
+            }
 
             final boolean[] houveAlteracao = {false};
 
-            JFrame frame = new JFrame(escolha == 1 ? "Árvore AVL" : "Árvore Binária");
+            JFrame frame = new JFrame(titulo);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new BorderLayout());
 
