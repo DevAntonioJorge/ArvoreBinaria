@@ -48,11 +48,11 @@ class ArvoreBinaria {
         return new ResultadoProcessamento(inseridosComSucesso, jaExistiam, duplicadosNaEntrada, erros);
     }
 
-    private static class Cursor {
+    protected static class Cursor {
         int indice;
     }
 
-    private static class InsercaoResultado {
+    protected static class InsercaoResultado {
         boolean inseriu;
     }
 
@@ -61,7 +61,7 @@ class ArvoreBinaria {
     }
 
     No raiz;
-    private boolean balanceamentoAtivo;
+    protected boolean balanceamentoAtivo;
     private ListenerRotacao listenerRotacao;
 
     ArvoreBinaria() {
@@ -72,19 +72,19 @@ class ArvoreBinaria {
         this.listenerRotacao = listener;
     }
 
-    private void notificarRotacao(String mensagem) {
+    protected void notificarRotacao(String mensagem) {
         if (listenerRotacao != null) {
             listenerRotacao.aoRotacionar(mensagem);
         }
     }
 
-    void setBalanceamentoAtivo(boolean ativo) {
-        if (this.balanceamentoAtivo == ativo) {
+    void setBalanceamentoAtivo() {
+        if (this.balanceamentoAtivo) {
             return;
         }
 
-        this.balanceamentoAtivo = ativo;
-        if (ativo && raiz != null) {
+        this.balanceamentoAtivo = true;
+        if (raiz != null) {
             raiz = balancearSubarvore(raiz);
         }
     }
@@ -417,7 +417,7 @@ class ArvoreBinaria {
         return no;
     }
 
-    private No inserirNo(No no, int valor, InsercaoResultado resultado) {
+    protected No inserirNo(No no, int valor, InsercaoResultado resultado) {
         if (no == null) {
             resultado.inseriu = true;
             return new No(valor);
@@ -433,10 +433,6 @@ class ArvoreBinaria {
 
         atualizarAltura(no);
 
-        if (balanceamentoAtivo) {
-            return balancearNo(no);
-        }
-
         return no;
     }
 
@@ -451,31 +447,11 @@ class ArvoreBinaria {
         return balancearNo(no);
     }
 
-    private No balancearNo(No no) {
-        int fatorBalanceamento = fatorBalanceamento(no);
-
-        if (fatorBalanceamento > 1) {
-            if (fatorBalanceamento(no.esquerda) < 0) {
-                notificarRotacao("Rotação Dupla Direita (E-D): Aplicando Rotação Esquerda no filho à esquerda (" + no.esquerda.valor + ") de " + no.valor);
-                no.esquerda = rotacaoEsquerda(no.esquerda);
-            }
-            notificarRotacao("Aplicando Rotação Direita em " + no.valor);
-            return rotacaoDireita(no);
-        }
-
-        if (fatorBalanceamento < -1) {
-            if (fatorBalanceamento(no.direita) > 0) {
-                notificarRotacao("Rotação Dupla Esquerda (D-E): Aplicando Rotação Direita no filho à direita (" + no.direita.valor + ") de " + no.valor);
-                no.direita = rotacaoDireita(no.direita);
-            }
-            notificarRotacao("Aplicando Rotação Esquerda em " + no.valor);
-            return rotacaoEsquerda(no);
-        }
-
+    protected No balancearNo(No no) {
         return no;
     }
 
-    private int fatorBalanceamento(No no) {
+    protected int fatorBalanceamento(No no) {
         if (no == null) {
             return 0;
         }
@@ -483,7 +459,7 @@ class ArvoreBinaria {
         return altura(no.esquerda) - altura(no.direita);
     }
 
-    private No rotacaoDireita(No no) {
+    protected No rotacaoDireita(No no) {
         No novaRaiz = no.esquerda;
         No subarvoreTemporaria = novaRaiz.direita;
 
@@ -495,7 +471,7 @@ class ArvoreBinaria {
         return novaRaiz;
     }
 
-    private No rotacaoEsquerda(No no) {
+    protected No rotacaoEsquerda(No no) {
         No novaRaiz = no.direita;
         No subarvoreTemporaria = novaRaiz.esquerda;
 
@@ -507,11 +483,11 @@ class ArvoreBinaria {
         return novaRaiz;
     }
 
-    private int altura(No no) {
+    protected int altura(No no) {
         return no == null ? -1 : no.altura;
     }
 
-    private void atualizarAltura(No no) {
+    protected void atualizarAltura(No no) {
         if (no == null) {
             return;
         }
