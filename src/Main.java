@@ -261,22 +261,48 @@ public class Main {
                         JOptionPane.WARNING_MESSAGE
                 );
 
-                if ((confirmacao == JOptionPane.YES_OPTION) && (arvore.raiz != null && houveAlteracao[0])) try {
-                    String serializacao = arvore.serializarParenteses();
-                    Path pastaArvores = Path.of("arvores");
-                    Files.createDirectories(pastaArvores);
-
-                    String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
-                    Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
-                    Files.writeString(caminhoArquivo, serializacao);
-                    JOptionPane.showMessageDialog(frame, "Árvore salva em " + caminhoArquivo, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
-                } finally {
-                    arvore.limpar();
-                    houveAlteracao[0] = false;
-                    painelArvore.atualizarLayout();
+                if (confirmacao != JOptionPane.YES_OPTION) {
+                    return;
                 }
+
+                boolean deveMostrarResumoRotacoes = (arvore instanceof ArvoreAVL) || (arvore instanceof ArvoreRedBlack);
+                String resumoRotacoes = deveMostrarResumoRotacoes ? arvore.resumoRotacoes() : null;
+
+                if (arvore.raiz != null && houveAlteracao[0]) {
+                    try {
+                        String serializacao = arvore.serializarParenteses();
+                        Path pastaArvores = Path.of("arvores");
+                        Path pastaResumos = pastaArvores.resolve("resumos");
+                        Files.createDirectories(pastaArvores);
+                        Files.createDirectories(pastaResumos);
+
+                        String dataHora = LocalDateTime.now().format(FORMATO_NOME_ARQUIVO);
+                        Path caminhoArquivo = pastaArvores.resolve("arvore_" + dataHora + ".txt");
+                        Files.writeString(caminhoArquivo, serializacao);
+
+                        Path caminhoResumo = null;
+                        if (deveMostrarResumoRotacoes) {
+                            caminhoResumo = pastaResumos.resolve("resumo_rotacoes_" + dataHora + ".txt");
+                            Files.writeString(caminhoResumo, resumoRotacoes);
+                        }
+
+                        String mensagemSucesso = "Árvore salva em " + caminhoArquivo;
+                        if (caminhoResumo != null) {
+                            mensagemSucesso += "\nResumo salvo em " + caminhoResumo;
+                        }
+                        JOptionPane.showMessageDialog(frame, mensagemSucesso, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+
+                if (deveMostrarResumoRotacoes) {
+                    JOptionPane.showMessageDialog(frame, resumoRotacoes, "Resumo de rotações", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+                arvore.limpar();
+                houveAlteracao[0] = false;
+                painelArvore.atualizarLayout();
             }
         };
     }

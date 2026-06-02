@@ -4,6 +4,34 @@ import java.util.Deque;
 import java.util.List;
 
 class ArvoreBinaria {
+    protected static class RegistroRotacao {
+        final String tipo;
+        final int noOriginal;
+        final int novaRaiz;
+        final Integer noTransferido;
+
+        RegistroRotacao(String tipo, int noOriginal, int novaRaiz, Integer noTransferido) {
+            this.tipo = tipo;
+            this.noOriginal = noOriginal;
+            this.novaRaiz = novaRaiz;
+            this.noTransferido = noTransferido;
+        }
+
+        String descrever(int indice) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(indice)
+                    .append(". ")
+                    .append(tipo)
+                    .append(" | nós afetados: ")
+                    .append(noOriginal)
+                    .append(" -> ")
+                    .append(novaRaiz);
+            if (noTransferido != null) {
+                sb.append(" | subárvore movida: ").append(noTransferido);
+            }
+            return sb.toString();
+        }
+    }
     public record ResultadoProcessamento(
             int inseridosComSucesso,
             int jaExistiam,
@@ -63,6 +91,7 @@ class ArvoreBinaria {
     No raiz;
     protected boolean balanceamentoAtivo;
     private ListenerRotacao listenerRotacao;
+    private final List<RegistroRotacao> historicoRotacoes = new ArrayList<>();
 
     ArvoreBinaria() {
         this.balanceamentoAtivo = false;
@@ -108,6 +137,7 @@ class ArvoreBinaria {
         }
 
         raiz = novaRaiz;
+        limparHistoricoRotacoes();
     }
 
     int nivelMaximoArvore() {
@@ -191,6 +221,33 @@ class ArvoreBinaria {
 
     void limpar() {
         raiz = null;
+        limparHistoricoRotacoes();
+    }
+
+    String resumoRotacoes() {
+        if (historicoRotacoes.isEmpty()) {
+            return "Nenhuma rotação registrada desde a última limpeza.";
+        }
+
+        StringBuilder sb = new StringBuilder("Resumo de rotações:\n");
+        for (int i = 0; i < historicoRotacoes.size(); i++) {
+            sb.append(historicoRotacoes.get(i).descrever(i + 1)).append("\n");
+        }
+        sb.append("Total: ").append(historicoRotacoes.size());
+        return sb.toString();
+    }
+
+    protected void limparHistoricoRotacoes() {
+        historicoRotacoes.clear();
+    }
+
+    protected void registrarRotacao(String tipo, No noOriginal, No novaRaiz, No subarvoreMovida) {
+        if (noOriginal == null || novaRaiz == null) {
+            return;
+        }
+
+        Integer noTransferido = subarvoreMovida == null ? null : subarvoreMovida.valor;
+        historicoRotacoes.add(new RegistroRotacao(tipo, noOriginal.valor, novaRaiz.valor, noTransferido));
     }
 
     void inverterSubarvores() {
@@ -468,6 +525,7 @@ class ArvoreBinaria {
 
         atualizarAltura(no);
         atualizarAltura(novaRaiz);
+        registrarRotacao("Rotação Direita", no, novaRaiz, subarvoreTemporaria);
         return novaRaiz;
     }
 
@@ -480,6 +538,7 @@ class ArvoreBinaria {
 
         atualizarAltura(no);
         atualizarAltura(novaRaiz);
+        registrarRotacao("Rotação Esquerda", no, novaRaiz, subarvoreTemporaria);
         return novaRaiz;
     }
 

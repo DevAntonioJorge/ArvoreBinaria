@@ -9,6 +9,6 @@ class No {
         this.esquerda = null;
         this.direita = null;
         this.altura = 0;
-        this.vermelho = true;
+        this.vermelho = false;
     }
 }
