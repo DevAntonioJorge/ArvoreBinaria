@@ -22,6 +22,8 @@ public class Main {
         }
     }
 
+    private record SnapshotArvore(No raiz) {}
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             String[] opcoes = {"Árvore Binária", "AVL", "Red-Black"};
@@ -54,6 +56,7 @@ public class Main {
             }
 
             final boolean[] houveAlteracao = {false};
+            final java.util.Deque<SnapshotArvore> historicoEstados = new java.util.ArrayDeque<>();
 
             JFrame frame = new JFrame(titulo);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -72,6 +75,7 @@ public class Main {
                     SwingUtilities.invokeLater(() -> {
                         labelStatus.setText(mensagem);
                         botaoProximo.setVisible(true);
+                        registrarEstadoAtual(arvore, historicoEstados);
                         painelArvore.atualizarLayout();
                     });
                     semaforoRotacao.acquire();
@@ -100,14 +104,14 @@ public class Main {
             JMenu menuArvore = new JMenu("Árvore");
 
             JMenuItem itemInserir = new JMenuItem("Inserir nó");
-            AcaoComComponentes acaoInserir = criarAcaoInserir(frame, arvore, painelArvore, houveAlteracao);
+            AcaoComComponentes acaoInserir = criarAcaoInserir(frame, arvore, painelArvore, houveAlteracao, historicoEstados);
             itemInserir.addActionListener(acaoInserir);
 
             JMenuItem itemVisualizar = new JMenuItem("Visualizar árvore");
             itemVisualizar.addActionListener(e -> painelArvore.atualizarLayout());
 
             JMenuItem itemLimpar = new JMenuItem("Limpar árvore");
-            AcaoComComponentes acaoLimpar = criarAcaoLimpar(frame, arvore, painelArvore, houveAlteracao);
+            AcaoComComponentes acaoLimpar = criarAcaoLimpar(frame, arvore, painelArvore, houveAlteracao, historicoEstados);
             itemLimpar.addActionListener(acaoLimpar);
 
             JButton botaoInserir = new JButton("Inserir nó");
@@ -115,22 +119,26 @@ public class Main {
 
             JButton botaoCaminhonamento = getBotaoCaminhonamento(frame, arvore);
 
+            JButton botaoDesfazer = new JButton("Desfazer");
+            botaoDesfazer.addActionListener(e -> desfazerUltimoEstado(frame, arvore, painelArvore, houveAlteracao, historicoEstados));
+
             JButton botaoLimpar = new JButton("Limpar árvore");
             botaoLimpar.addActionListener(acaoLimpar);
 
             JButton botaoInverter = new JButton("Inverter subárvores");
-            botaoInverter.addActionListener(criarAcaoInverter(frame, arvore, painelArvore, houveAlteracao));
+            botaoInverter.addActionListener(criarAcaoInverter(frame, arvore, painelArvore, houveAlteracao, historicoEstados));
 
             JButton botaoHistorico = new JButton("Histórico");
-            botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao));
+            botaoHistorico.addActionListener(criarAcaoHistorico(frame, arvore, painelArvore, houveAlteracao, historicoEstados));
 
             java.util.List<javax.swing.JComponent> componentesAcao = java.util.List.of(
-                    itemInserir, itemLimpar, botaoInserir, botaoCaminhonamento, botaoLimpar, botaoInverter, botaoHistorico
+                    itemInserir, itemLimpar, botaoInserir, botaoCaminhonamento, botaoDesfazer, botaoLimpar, botaoInverter, botaoHistorico
             );
 
             JPanel painelAcoes = new JPanel();
             painelAcoes.add(botaoInserir);
             painelAcoes.add(botaoCaminhonamento);
+            painelAcoes.add(botaoDesfazer);
             painelAcoes.add(botaoLimpar);
             painelAcoes.add(botaoInverter);
             painelAcoes.add(botaoHistorico);
@@ -145,6 +153,7 @@ public class Main {
             frame.setSize(900, 500);
             frame.setLocationRelativeTo(null);
             painelArvore.atualizarLayout();
+            registrarEstadoAtual(arvore, historicoEstados);
             frame.setVisible(true);
 
             acaoInserir.setComponentes(componentesAcao);
@@ -160,7 +169,8 @@ public class Main {
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
-            boolean[] houveAlteracao
+            boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados
     ) {
         return new AcaoComComponentes() {
             private java.util.List<javax.swing.JComponent> componentes;
@@ -187,7 +197,7 @@ public class Main {
                         var res = arvore.inserirMassa(entradaFinal, () -> SwingUtilities.invokeLater(painelArvore::atualizarLayout));
 
                         SwingUtilities.invokeLater(() -> {
-                            processarResultadoInsercao(frame, painelArvore, houveAlteracao, res);
+                            processarResultadoInsercao(frame, arvore, painelArvore, houveAlteracao, historicoEstados, res);
                             habilitarComponentes(componentes);
                         });
                     } catch (Exception ex) {
@@ -200,8 +210,10 @@ public class Main {
 
     private static void processarResultadoInsercao(
             JFrame frame,
+            ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
             boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados,
             ArvoreBinaria.ResultadoProcessamento res
     ) {
         boolean apenasErros = res.inseridosComSucesso() == 0
@@ -217,6 +229,7 @@ public class Main {
         if (res.inseridosComSucesso() > 0) {
             houveAlteracao[0] = true;
             painelArvore.atualizarLayout();
+            registrarEstadoAtual(arvore, historicoEstados);
         }
 
         String msg = montarMensagemResultadoInsercao(res);
@@ -243,7 +256,8 @@ public class Main {
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
-            boolean[] houveAlteracao
+            boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados
     ) {
         return new AcaoComComponentes() {
 
@@ -267,6 +281,8 @@ public class Main {
 
                 boolean deveMostrarResumoRotacoes = (arvore instanceof ArvoreAVL) || (arvore instanceof ArvoreRedBlack);
                 String resumoRotacoes = deveMostrarResumoRotacoes ? arvore.resumoRotacoes() : null;
+                String mensagemSucesso = null;
+                String mensagemErro = null;
 
                 if (arvore.raiz != null && houveAlteracao[0]) {
                     try {
@@ -286,23 +302,31 @@ public class Main {
                             Files.writeString(caminhoResumo, resumoRotacoes);
                         }
 
-                        String mensagemSucesso = "Árvore salva em " + caminhoArquivo;
+                        mensagemSucesso = "Árvore salva em " + caminhoArquivo;
                         if (caminhoResumo != null) {
                             mensagemSucesso += "\nResumo salvo em " + caminhoResumo;
                         }
-                        JOptionPane.showMessageDialog(frame, mensagemSucesso, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                     } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(frame, "Não foi possível salvar a árvore em arquivo.", "Erro", JOptionPane.ERROR_MESSAGE);
+                        mensagemErro = "Não foi possível salvar a árvore em arquivo.";
                     }
+                }
+
+                arvore.limpar();
+                houveAlteracao[0] = false;
+                painelArvore.atualizarLayout();
+                registrarEstadoAtual(arvore, historicoEstados);
+
+                if (mensagemErro != null) {
+                    JOptionPane.showMessageDialog(frame, mensagemErro, "Erro", JOptionPane.ERROR_MESSAGE);
                 }
 
                 if (deveMostrarResumoRotacoes) {
                     JOptionPane.showMessageDialog(frame, resumoRotacoes, "Resumo de rotações", JOptionPane.INFORMATION_MESSAGE);
                 }
 
-                arvore.limpar();
-                houveAlteracao[0] = false;
-                painelArvore.atualizarLayout();
+                if (mensagemSucesso != null) {
+                    JOptionPane.showMessageDialog(frame, mensagemSucesso, "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         };
     }
@@ -311,7 +335,8 @@ public class Main {
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
-            boolean[] houveAlteracao
+            boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados
     ) {
         return e -> {
             Path pastaArvores = Path.of("arvores");
@@ -357,6 +382,7 @@ public class Main {
                 arvore.carregarDeSerializacao(selecionado.serializacao);
                 houveAlteracao[0] = false;
                 painelArvore.atualizarLayout();
+                registrarEstadoAtual(arvore, historicoEstados);
             } catch (IllegalArgumentException ex) {
                 JOptionPane.showMessageDialog(frame, "Arquivo de histórico inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
             } catch (IOException ex) {
@@ -369,7 +395,8 @@ public class Main {
             JFrame frame,
             ArvoreBinaria arvore,
             PainelPrincipal painelArvore,
-            boolean[] houveAlteracao
+            boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados
     ) {
         return e -> {
             if (arvore.raiz == null) {
@@ -380,7 +407,76 @@ public class Main {
             arvore.inverterSubarvores();
             houveAlteracao[0] = true;
             painelArvore.atualizarLayout();
+            registrarEstadoAtual(arvore, historicoEstados);
         };
+    }
+
+    private static void desfazerUltimoEstado(
+            JFrame frame,
+            ArvoreBinaria arvore,
+            PainelPrincipal painelArvore,
+            boolean[] houveAlteracao,
+            java.util.Deque<SnapshotArvore> historicoEstados
+    ) {
+        if (historicoEstados.size() <= 1) {
+            JOptionPane.showMessageDialog(frame, "Não há ação para desfazer.", "Desfazer", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        historicoEstados.removeLast();
+        SnapshotArvore snapshotAnterior = historicoEstados.peekLast();
+
+        if (snapshotAnterior == null) {
+            return;
+        }
+
+        arvore.raiz = copiarSubarvore(snapshotAnterior.raiz());
+        houveAlteracao[0] = arvore.raiz != null;
+        painelArvore.atualizarLayout();
+    }
+
+    private static void registrarEstadoAtual(ArvoreBinaria arvore, java.util.Deque<SnapshotArvore> historicoEstados) {
+        if (arvore == null || historicoEstados == null) {
+            return;
+        }
+
+        SnapshotArvore estadoAtual = new SnapshotArvore(copiarSubarvore(arvore.raiz));
+        SnapshotArvore ultimo = historicoEstados.peekLast();
+
+        if (ultimo != null && mesmaArvore(ultimo.raiz(), estadoAtual.raiz())) {
+            return;
+        }
+
+        historicoEstados.addLast(estadoAtual);
+    }
+
+    private static No copiarSubarvore(No no) {
+        if (no == null) {
+            return null;
+        }
+
+        No copia = new No(no.valor);
+        copia.altura = no.altura;
+        copia.vermelho = no.vermelho;
+        copia.esquerda = copiarSubarvore(no.esquerda);
+        copia.direita = copiarSubarvore(no.direita);
+        return copia;
+    }
+
+    private static boolean mesmaArvore(No a, No b) {
+        if (a == b) {
+            return true;
+        }
+
+        if (a == null || b == null) {
+            return false;
+        }
+
+        return a.valor == b.valor
+                && a.altura == b.altura
+                && a.vermelho == b.vermelho
+                && mesmaArvore(a.esquerda, b.esquerda)
+                && mesmaArvore(a.direita, b.direita);
     }
 
     private static JButton getBotaoCaminhonamento(JFrame frame, ArvoreBinaria arvore) {

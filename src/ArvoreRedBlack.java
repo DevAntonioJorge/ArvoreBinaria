@@ -1,3 +1,6 @@
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 class ArvoreRedBlack extends ArvoreBinaria {
 
     ArvoreRedBlack() {
@@ -7,89 +10,183 @@ class ArvoreRedBlack extends ArvoreBinaria {
 
     @Override
     boolean inserir(int valor) {
-        InsercaoResultado resultado = new InsercaoResultado();
-        raiz = inserirRB(raiz, valor, resultado);
+        if (raiz == null) {
+            raiz = new No(valor);
+            raiz.vermelho = false;
+            return true;
+        }
+
+        Map<No, No> pais = new IdentityHashMap<>();
+        No atual = raiz;
+        No pai = null;
+
+        while (atual != null) {
+            pais.put(atual, pai);
+
+            if (valor < atual.valor) {
+                pai = atual;
+                atual = atual.esquerda;
+            } else if (valor > atual.valor) {
+                pai = atual;
+                atual = atual.direita;
+            } else {
+                return false;
+            }
+        }
+
+        No novo = new No(valor);
+        novo.vermelho = true;
+        pais.put(novo, pai);
+
+        if (valor < pai.valor) {
+            pai.esquerda = novo;
+        } else {
+            pai.direita = novo;
+        }
+
+        corrigirInsercao(novo, pais);
         raiz.vermelho = false;
-        return resultado.inseriu;
+        recalcularAlturas(raiz);
+        return true;
     }
 
-    private No inserirRB(No no, int valor, InsercaoResultado resultado) {
-        if (no == null) {
-            resultado.inseriu = true;
-            No novo = new No(valor);
-            novo.vermelho = true;
-            return novo;
-        }
+    private void corrigirInsercao(No no, Map<No, No> pais) {
+        while (no != raiz && isVermelho(pais.get(no))) {
+            No pai = pais.get(no);
+            No avo = pais.get(pai);
 
-        if (valor < no.valor) {
-            no.esquerda = inserirRB(no.esquerda, valor, resultado);
-        } else if (valor > no.valor) {
-            no.direita = inserirRB(no.direita, valor, resultado);
-        } else {
-            return no;
-        }
+            if (avo == null) {
+                break;
+            }
 
-        if (isVermelho(no.esquerda) && isVermelho(no.esquerda.direita)) {
-            no.esquerda = rotacaoEsquerdaRB(no.esquerda);
-            no = rotacaoDireitaRB(no);
-        }
-        if (isVermelho(no.direita) && isVermelho(no.direita.esquerda)) {
-            no.direita = rotacaoDireitaRB(no.direita);
-            no = rotacaoEsquerdaRB(no);
-        }
-        if (isVermelho(no.esquerda) && isVermelho(no.esquerda.esquerda)) {
-            no = rotacaoDireitaRB(no);
-        }
-        if (isVermelho(no.direita) && isVermelho(no.direita.direita)) {
-            no = rotacaoEsquerdaRB(no);
-        }
-        if (isVermelho(no.esquerda) && isVermelho(no.direita)) {
-            inverterCores(no);
-        }
+            if (pai == avo.esquerda) {
+                No tio = avo.direita;
 
-        atualizarAltura(no);
-        return no;
+                if (isVermelho(tio)) {
+                    pai.vermelho = false;
+                    tio.vermelho = false;
+                    avo.vermelho = true;
+                    no = avo;
+                    continue;
+                }
+
+                if (no == pai.direita) {
+                    no = pai;
+                    rotacaoEsquerdaRB(no, pais);
+                    pai = pais.get(no);
+                    avo = pais.get(pai);
+                }
+
+                if (pai != null) {
+                    pai.vermelho = false;
+                }
+                if (avo != null) {
+                    avo.vermelho = true;
+                    rotacaoDireitaRB(avo, pais);
+                }
+            } else {
+                No tio = avo.esquerda;
+
+                if (isVermelho(tio)) {
+                    pai.vermelho = false;
+                    tio.vermelho = false;
+                    avo.vermelho = true;
+                    no = avo;
+                    continue;
+                }
+
+                if (no == pai.esquerda) {
+                    no = pai;
+                    rotacaoDireitaRB(no, pais);
+                    pai = pais.get(no);
+                    avo = pais.get(pai);
+                }
+
+                if (pai != null) {
+                    pai.vermelho = false;
+                }
+                if (avo != null) {
+                    avo.vermelho = true;
+                    rotacaoEsquerdaRB(avo, pais);
+                }
+            }
+        }
     }
 
     private boolean isVermelho(No no) {
-        if (no == null) return false;
-        return no.vermelho;
+        return no != null && no.vermelho;
     }
 
-    private void inverterCores(No no) {
-        no.vermelho = !no.vermelho;
-        if (no.esquerda != null) no.esquerda.vermelho = !no.esquerda.vermelho;
-        if (no.direita != null) no.direita.vermelho = !no.direita.vermelho;
-    }
-
-    private No rotacaoEsquerdaRB(No no) {
+    private No rotacaoEsquerdaRB(No no, Map<No, No> pais) {
         notificarRotacao("Red-Black: Rotação Esquerda em " + no.valor);
+
         No x = no.direita;
         No subarvoreTemporaria = x.esquerda;
-        no.direita = x.esquerda;
+        No pai = pais.get(no);
+
+        no.direita = subarvoreTemporaria;
+        if (subarvoreTemporaria != null) {
+            pais.put(subarvoreTemporaria, no);
+        }
+
         x.esquerda = no;
+        pais.put(no, x);
+        pais.put(x, pai);
+
+        if (pai == null) {
+            raiz = x;
+        } else if (pai.esquerda == no) {
+            pai.esquerda = x;
+        } else {
+            pai.direita = x;
+        }
+
         x.vermelho = no.vermelho;
         no.vermelho = true;
-        atualizarAltura(no);
-        atualizarAltura(x);
         registrarRotacao("Rotação Esquerda (Red-Black)", no, x, subarvoreTemporaria);
         return x;
     }
 
-    private No rotacaoDireitaRB(No no) {
+    private No rotacaoDireitaRB(No no, Map<No, No> pais) {
         notificarRotacao("Red-Black: Rotação Direita em " + no.valor);
+
         No x = no.esquerda;
         No subarvoreTemporaria = x.direita;
-        no.esquerda = x.direita;
+        No pai = pais.get(no);
+
+        no.esquerda = subarvoreTemporaria;
+        if (subarvoreTemporaria != null) {
+            pais.put(subarvoreTemporaria, no);
+        }
+
         x.direita = no;
+        pais.put(no, x);
+        pais.put(x, pai);
+
+        if (pai == null) {
+            raiz = x;
+        } else if (pai.esquerda == no) {
+            pai.esquerda = x;
+        } else {
+            pai.direita = x;
+        }
+
         x.vermelho = no.vermelho;
         no.vermelho = true;
-        atualizarAltura(no);
-        atualizarAltura(x);
         registrarRotacao("Rotação Direita (Red-Black)", no, x, subarvoreTemporaria);
         return x;
     }
-    
+
+    private void recalcularAlturas(No no) {
+        if (no == null) {
+            return;
+        }
+
+        recalcularAlturas(no.esquerda);
+        recalcularAlturas(no.direita);
+        atualizarAltura(no);
+    }
+
     @Override
     public String tipoEstrutural() {
         return "Árvore Red-Black";
