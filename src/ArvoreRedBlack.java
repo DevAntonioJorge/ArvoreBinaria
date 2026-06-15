@@ -10,57 +10,57 @@ class ArvoreRedBlack extends ArvoreBinaria {
 
     @Override
     boolean inserir(int valor) {
-        if (raiz == null) {
-            raiz = new No(valor);
-            raiz.vermelho = false;
-            return true;
-        }
-
-        Map<No, No> pais = new IdentityHashMap<>();
-        No atual = raiz;
-        No pai = null;
-
-        while (atual != null) {
-            pais.put(atual, pai);
-
-            if (valor < atual.valor) {
-                pai = atual;
-                atual = atual.esquerda;
-            } else if (valor > atual.valor) {
-                pai = atual;
-                atual = atual.direita;
-            } else {
-                return false;
-            }
-        }
-
-        No novo = new No(valor);
-        novo.vermelho = true;
-        pais.put(novo, pai);
-
-        if (valor < pai.valor) {
-            pai.esquerda = novo;
-        } else {
-            pai.direita = novo;
-        }
-
-        corrigirInsercao(novo, pais);
-        raiz.vermelho = false;
-        recalcularAlturas(raiz);
-        return true;
+        InsercaoResultado resultado = new InsercaoResultado();
+        raiz = inserirRB(raiz, valor, resultado);
+        raiz.vermelho = false; // A raiz sempre deve ser preta
+        return resultado.inseriu;
     }
 
-    private void corrigirInsercao(No no, Map<No, No> pais) {
-        while (no != raiz && isVermelho(pais.get(no))) {
-            No pai = pais.get(no);
-            No avo = pais.get(pai);
+    private No inserirRB(No no, int valor, InsercaoResultado resultado) {
+        // 1. Inserção padrão de Árvore Binária de Busca (BST)
+        if (no == null) {
+            resultado.inseriu = true;
+            No novo = new No(valor);
+            novo.vermelho = true; // Todo nó novo nasce vermelho
+            return novo;
+        }
 
-            if (avo == null) {
-                break;
+        if (valor < no.valor) {
+            no.esquerda = inserirRB(no.esquerda, valor, resultado);
+        } else if (valor > no.valor) {
+            no.direita = inserirRB(no.direita, valor, resultado);
+        } else {
+            return no; // Valor já existe
+        }
+
+        // 2. REBALANCEAMENTO (Na volta da recursão - Bottom-Up)
+
+        // CASO A: O nó atual tem dois filhos vermelhos (Tio Vermelho)
+        // Inverte as cores e joga o "problema" para o pai resolver acima na recursão
+        if (isVermelho(no.esquerda) && isVermelho(no.direita)) {
+            inverterCores(no);
+        }
+        // CASO B: Casos de desalinhamento (Tio Preto) -> Usando else if para evitar rotações duplas na mesma passada
+        else {
+            // Caso Esquerda-Direita: Filho esquerdo é vermelho e o neto direito é vermelho
+            if (isVermelho(no.esquerda) && isVermelho(no.esquerda.direita)) {
+                no.esquerda =  rotacaoEsquerdaRB(no.esquerda);
+                no = rotacaoDireitaRB(no);
             }
-
-            if (pai == avo.esquerda) {
-                No tio = avo.direita;
+            // Caso Direita-Esquerda: Filho direito é vermelho e o neto esquerdo é vermelho
+            else if (isVermelho(no.direita) && isVermelho(no.direita.esquerda)) {
+                no.direita = rotacaoDireitaRB(no.direita);
+                no =  rotacaoEsquerdaRB(no);
+            }
+            // Caso Esquerda-Esquerda: Filho esquerdo e neto esquerdo são vermelhos
+            else if (isVermelho(no.esquerda) && isVermelho(no.esquerda.esquerda)) {
+                no = rotacaoDireitaRB(no);
+            }
+            // Caso Direita-Direita: Filho direito e neto direito são vermelhos
+            else if (isVermelho(no.direita) && isVermelho(no.direita.direita)) {
+                no = rotacaoEsquerdaRB(no);
+            }
+        }
 
                 if (isVermelho(tio)) {
                     pai.vermelho = false;
@@ -117,7 +117,13 @@ class ArvoreRedBlack extends ArvoreBinaria {
         return no != null && no.vermelho;
     }
 
-    private No rotacaoEsquerdaRB(No no, Map<No, No> pais) {
+    private void inverterCores(No no) {
+        no.vermelho = true;
+        if (no.esquerda != null) no.esquerda.vermelho = false;
+        if (no.direita != null) no.direita.vermelho = false;
+    }
+
+    private No  rotacaoEsquerdaRB(No no) {
         notificarRotacao("Red-Black: Rotação Esquerda em " + no.valor);
 
         No x = no.direita;
@@ -130,24 +136,17 @@ class ArvoreRedBlack extends ArvoreBinaria {
         }
 
         x.esquerda = no;
-        pais.put(no, x);
-        pais.put(x, pai);
-
-        if (pai == null) {
-            raiz = x;
-        } else if (pai.esquerda == no) {
-            pai.esquerda = x;
-        } else {
-            pai.direita = x;
-        }
 
         x.vermelho = no.vermelho;
         no.vermelho = true;
+
+        atualizarAltura(no);
+        atualizarAltura(x);
         registrarRotacao("Rotação Esquerda (Red-Black)", no, x, subarvoreTemporaria);
         return x;
     }
 
-    private No rotacaoDireitaRB(No no, Map<No, No> pais) {
+    private No  rotacaoDireitaRB(No no) {
         notificarRotacao("Red-Black: Rotação Direita em " + no.valor);
 
         No x = no.esquerda;
@@ -160,31 +159,14 @@ class ArvoreRedBlack extends ArvoreBinaria {
         }
 
         x.direita = no;
-        pais.put(no, x);
-        pais.put(x, pai);
-
-        if (pai == null) {
-            raiz = x;
-        } else if (pai.esquerda == no) {
-            pai.esquerda = x;
-        } else {
-            pai.direita = x;
-        }
 
         x.vermelho = no.vermelho;
         no.vermelho = true;
+
+        atualizarAltura(no);
+        atualizarAltura(x);
         registrarRotacao("Rotação Direita (Red-Black)", no, x, subarvoreTemporaria);
         return x;
-    }
-
-    private void recalcularAlturas(No no) {
-        if (no == null) {
-            return;
-        }
-
-        recalcularAlturas(no.esquerda);
-        recalcularAlturas(no.direita);
-        atualizarAltura(no);
     }
 
     @Override
