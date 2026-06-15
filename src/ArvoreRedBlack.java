@@ -1,6 +1,3 @@
-import java.util.IdentityHashMap;
-import java.util.Map;
-
 class ArvoreRedBlack extends ArvoreBinaria {
 
     ArvoreRedBlack() {
@@ -58,63 +55,17 @@ class ArvoreRedBlack extends ArvoreBinaria {
             }
             // Caso Direita-Direita: Filho direito e neto direito são vermelhos
             else if (isVermelho(no.direita) && isVermelho(no.direita.direita)) {
-                no = rotacaoEsquerdaRB(no);
+                no =  rotacaoEsquerdaRB(no);
             }
         }
 
-                if (isVermelho(tio)) {
-                    pai.vermelho = false;
-                    tio.vermelho = false;
-                    avo.vermelho = true;
-                    no = avo;
-                    continue;
-                }
-
-                if (no == pai.direita) {
-                    no = pai;
-                    rotacaoEsquerdaRB(no, pais);
-                    pai = pais.get(no);
-                    avo = pais.get(pai);
-                }
-
-                if (pai != null) {
-                    pai.vermelho = false;
-                }
-                if (avo != null) {
-                    avo.vermelho = true;
-                    rotacaoDireitaRB(avo, pais);
-                }
-            } else {
-                No tio = avo.esquerda;
-
-                if (isVermelho(tio)) {
-                    pai.vermelho = false;
-                    tio.vermelho = false;
-                    avo.vermelho = true;
-                    no = avo;
-                    continue;
-                }
-
-                if (no == pai.esquerda) {
-                    no = pai;
-                    rotacaoDireitaRB(no, pais);
-                    pai = pais.get(no);
-                    avo = pais.get(pai);
-                }
-
-                if (pai != null) {
-                    pai.vermelho = false;
-                }
-                if (avo != null) {
-                    avo.vermelho = true;
-                    rotacaoEsquerdaRB(avo, pais);
-                }
-            }
-        }
+        atualizarAltura(no);
+        return no;
     }
 
     private boolean isVermelho(No no) {
-        return no != null && no.vermelho;
+        if (no == null) return false;
+        return no.vermelho;
     }
 
     private void inverterCores(No no) {
@@ -125,16 +76,9 @@ class ArvoreRedBlack extends ArvoreBinaria {
 
     private No  rotacaoEsquerdaRB(No no) {
         notificarRotacao("Red-Black: Rotação Esquerda em " + no.valor);
-
         No x = no.direita;
         No subarvoreTemporaria = x.esquerda;
-        No pai = pais.get(no);
-
-        no.direita = subarvoreTemporaria;
-        if (subarvoreTemporaria != null) {
-            pais.put(subarvoreTemporaria, no);
-        }
-
+        no.direita = x.esquerda;
         x.esquerda = no;
 
         x.vermelho = no.vermelho;
@@ -148,16 +92,9 @@ class ArvoreRedBlack extends ArvoreBinaria {
 
     private No  rotacaoDireitaRB(No no) {
         notificarRotacao("Red-Black: Rotação Direita em " + no.valor);
-
         No x = no.esquerda;
         No subarvoreTemporaria = x.direita;
-        No pai = pais.get(no);
-
-        no.esquerda = subarvoreTemporaria;
-        if (subarvoreTemporaria != null) {
-            pais.put(subarvoreTemporaria, no);
-        }
-
+        no.esquerda = x.direita;
         x.direita = no;
 
         x.vermelho = no.vermelho;
