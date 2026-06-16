@@ -440,7 +440,14 @@ public class Main {
             return;
         }
 
-        SnapshotArvore estadoAtual = new SnapshotArvore(copiarSubarvore(arvore.raiz));
+        No copia = copiarSubarvore(arvore.raiz);
+
+if (copia != null) {
+    copia.pai = null;
+}
+
+SnapshotArvore estadoAtual =
+        new SnapshotArvore(copia);
         SnapshotArvore ultimo = historicoEstados.peekLast();
 
         if (ultimo != null && mesmaArvore(ultimo.raiz(), estadoAtual.raiz())) {
@@ -450,18 +457,29 @@ public class Main {
         historicoEstados.addLast(estadoAtual);
     }
 
-    private static No copiarSubarvore(No no) {
-        if (no == null) {
-            return null;
-        }
+private static No copiarSubarvore(No no) {
 
-        No copia = new No(no.valor);
-        copia.altura = no.altura;
-        copia.vermelho = no.vermelho;
-        copia.esquerda = copiarSubarvore(no.esquerda);
-        copia.direita = copiarSubarvore(no.direita);
-        return copia;
+    if (no == null) {
+        return null;
     }
+
+    No copia = new No(no.valor);
+
+    copia.altura = no.altura;
+    copia.vermelho = no.vermelho;
+
+    copia.esquerda = copiarSubarvore(no.esquerda);
+    if (copia.esquerda != null) {
+        copia.esquerda.pai = copia;
+    }
+
+    copia.direita = copiarSubarvore(no.direita);
+    if (copia.direita != null) {
+        copia.direita.pai = copia;
+    }
+
+    return copia;
+}
 
     private static boolean mesmaArvore(No a, No b) {
         if (a == b) {

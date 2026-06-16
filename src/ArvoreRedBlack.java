@@ -7,103 +7,235 @@ class ArvoreRedBlack extends ArvoreBinaria {
 
     @Override
     boolean inserir(int valor) {
-        InsercaoResultado resultado = new InsercaoResultado();
-        raiz = inserirRB(raiz, valor, resultado);
-        raiz.vermelho = false; // A raiz sempre deve ser preta
-        return resultado.inseriu;
+
+        if (raiz == null) {
+            raiz = new No(valor);
+            raiz.vermelho = false;
+            return true;
+        }
+
+        No novo = inserirBST(valor);
+
+        if (novo == null) {
+            return false;
+        }
+
+        corrigirInsercao(novo);
+
+        raiz.vermelho = false;
+
+        return true;
     }
 
-    private No inserirRB(No no, int valor, InsercaoResultado resultado) {
-        // 1. Inserção padrão de Árvore Binária de Busca (BST)
-        if (no == null) {
-            resultado.inseriu = true;
-            No novo = new No(valor);
-            novo.vermelho = true; // Todo nó novo nasce vermelho
-            return novo;
+    private No inserirBST(int valor) {
+
+        No atual = raiz;
+        No pai = null;
+
+        while (atual != null) {
+
+            pai = atual;
+
+            if (valor < atual.valor) {
+                atual = atual.esquerda;
+            }
+            else if (valor > atual.valor) {
+                atual = atual.direita;
+            }
+            else {
+                return null;
+            }
         }
 
-        if (valor < no.valor) {
-            no.esquerda = inserirRB(no.esquerda, valor, resultado);
-        } else if (valor > no.valor) {
-            no.direita = inserirRB(no.direita, valor, resultado);
-        } else {
-            return no; // Valor já existe
-        }
+        No novo = new No(valor);
+        novo.pai = pai;
 
-        // 2. REBALANCEAMENTO (Na volta da recursão - Bottom-Up)
-
-        // CASO A: O nó atual tem dois filhos vermelhos (Tio Vermelho)
-        // Inverte as cores e joga o "problema" para o pai resolver acima na recursão
-        if (isVermelho(no.esquerda) && isVermelho(no.direita)) {
-            inverterCores(no);
+        if (valor < pai.valor) {
+            pai.esquerda = novo;
         }
-        // CASO B: Casos de desalinhamento (Tio Preto) -> Usando else if para evitar rotações duplas na mesma passada
         else {
-            // Caso Esquerda-Direita: Filho esquerdo é vermelho e o neto direito é vermelho
-            if (isVermelho(no.esquerda) && isVermelho(no.esquerda.direita)) {
-                no.esquerda =  rotacaoEsquerdaRB(no.esquerda);
-                no = rotacaoDireitaRB(no);
+            pai.direita = novo;
+        }
+
+        atualizarAlturasAteRaiz(novo);
+
+        return novo;
+    }
+
+    private void corrigirInsercao(No no) {
+
+        while (no != raiz &&
+               no.pai != null &&
+               no.pai.vermelho) {
+
+            No pai = no.pai;
+            No avo = pai.pai;
+
+            if (avo == null) {
+                break;
             }
-            // Caso Direita-Esquerda: Filho direito é vermelho e o neto esquerdo é vermelho
-            else if (isVermelho(no.direita) && isVermelho(no.direita.esquerda)) {
-                no.direita = rotacaoDireitaRB(no.direita);
-                no =  rotacaoEsquerdaRB(no);
+
+            if (pai == avo.esquerda) {
+
+                No tio = avo.direita;
+
+                // Caso 1 - tio vermelho
+                if (isVermelho(tio)) {
+
+                    pai.vermelho = false;
+                    tio.vermelho = false;
+                    avo.vermelho = true;
+
+                    no = avo;
+                }
+                else {
+
+                    // Caso 2 - Esquerda-Direita
+                    if (no == pai.direita) {
+
+                        no = pai;
+                        rotacaoEsquerdaRB(no);
+
+                        pai = no.pai;
+                        avo = pai.pai;
+                    }
+
+                    // Caso 3 - Esquerda-Esquerda
+                    pai.vermelho = false;
+                    avo.vermelho = true;
+
+                    rotacaoDireitaRB(avo);
+                }
             }
-            // Caso Esquerda-Esquerda: Filho esquerdo e neto esquerdo são vermelhos
-            else if (isVermelho(no.esquerda) && isVermelho(no.esquerda.esquerda)) {
-                no = rotacaoDireitaRB(no);
-            }
-            // Caso Direita-Direita: Filho direito e neto direito são vermelhos
-            else if (isVermelho(no.direita) && isVermelho(no.direita.direita)) {
-                no =  rotacaoEsquerdaRB(no);
+            else {
+
+                No tio = avo.esquerda;
+
+                // Caso 1 espelhado
+                if (isVermelho(tio)) {
+
+                    pai.vermelho = false;
+                    tio.vermelho = false;
+                    avo.vermelho = true;
+
+                    no = avo;
+                }
+                else {
+
+                    // Caso 2 - Direita-Esquerda
+                    if (no == pai.esquerda) {
+
+                        no = pai;
+                        rotacaoDireitaRB(no);
+
+                        pai = no.pai;
+                        avo = pai.pai;
+                    }
+
+                    // Caso 3 - Direita-Direita
+                    pai.vermelho = false;
+                    avo.vermelho = true;
+
+                    rotacaoEsquerdaRB(avo);
+                }
             }
         }
 
-        atualizarAltura(no);
-        return no;
+        raiz.vermelho = false;
     }
 
     private boolean isVermelho(No no) {
-        if (no == null) return false;
-        return no.vermelho;
+        return no != null && no.vermelho;
     }
 
-    private void inverterCores(No no) {
-        no.vermelho = true;
-        if (no.esquerda != null) no.esquerda.vermelho = false;
-        if (no.direita != null) no.direita.vermelho = false;
-    }
+    private void rotacaoEsquerdaRB(No x) {
 
-    private No  rotacaoEsquerdaRB(No no) {
-        notificarRotacao("Red-Black: Rotação Esquerda em " + no.valor);
-        No x = no.direita;
-        No subarvoreTemporaria = x.esquerda;
-        no.direita = x.esquerda;
-        x.esquerda = no;
+        notificarRotacao(
+                "Red-Black: Rotação Esquerda em " + x.valor
+        );
 
-        x.vermelho = no.vermelho;
-        no.vermelho = true;
+        No y = x.direita;
+        No subarvoreMovida = y.esquerda;
 
-        atualizarAltura(no);
+        x.direita = subarvoreMovida;
+
+        if (subarvoreMovida != null) {
+            subarvoreMovida.pai = x;
+        }
+
+        y.pai = x.pai;
+
+        if (x.pai == null) {
+            raiz = y;
+        }
+        else if (x == x.pai.esquerda) {
+            x.pai.esquerda = y;
+        }
+        else {
+            x.pai.direita = y;
+        }
+
+        y.esquerda = x;
+        x.pai = y;
+
         atualizarAltura(x);
-        registrarRotacao("Rotação Esquerda (Red-Black)", no, x, subarvoreTemporaria);
-        return x;
+        atualizarAltura(y);
+
+        registrarRotacao(
+                "Rotação Esquerda (Red-Black)",
+                x,
+                y,
+                subarvoreMovida
+        );
     }
 
-    private No  rotacaoDireitaRB(No no) {
-        notificarRotacao("Red-Black: Rotação Direita em " + no.valor);
-        No x = no.esquerda;
-        No subarvoreTemporaria = x.direita;
-        no.esquerda = x.direita;
-        x.direita = no;
+    private void rotacaoDireitaRB(No y) {
 
-        x.vermelho = no.vermelho;
-        no.vermelho = true;
+        notificarRotacao(
+                "Red-Black: Rotação Direita em " + y.valor
+        );
 
-        atualizarAltura(no);
+        No x = y.esquerda;
+        No subarvoreMovida = x.direita;
+
+        y.esquerda = subarvoreMovida;
+
+        if (subarvoreMovida != null) {
+            subarvoreMovida.pai = y;
+        }
+
+        x.pai = y.pai;
+
+        if (y.pai == null) {
+            raiz = x;
+        }
+        else if (y == y.pai.esquerda) {
+            y.pai.esquerda = x;
+        }
+        else {
+            y.pai.direita = x;
+        }
+
+        x.direita = y;
+        y.pai = x;
+
+        atualizarAltura(y);
         atualizarAltura(x);
-        registrarRotacao("Rotação Direita (Red-Black)", no, x, subarvoreTemporaria);
-        return x;
+
+        registrarRotacao(
+                "Rotação Direita (Red-Black)",
+                y,
+                x,
+                subarvoreMovida
+        );
+    }
+
+    private void atualizarAlturasAteRaiz(No no) {
+
+        while (no != null) {
+            atualizarAltura(no);
+            no = no.pai;
+        }
     }
 
     @Override

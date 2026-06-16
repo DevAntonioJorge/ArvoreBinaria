@@ -1,14 +1,17 @@
 class No {
+
     int valor;
+    int altura;
+
+    boolean vermelho;
+
     No esquerda;
     No direita;
-    int altura;
-    boolean vermelho;
+    No pai;
+
     No(int valor) {
         this.valor = valor;
-        this.esquerda = null;
-        this.direita = null;
         this.altura = 0;
-        this.vermelho = false;
+        this.vermelho = true; // novos nós nascem vermelhos
     }
 }

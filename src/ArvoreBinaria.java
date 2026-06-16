@@ -204,13 +204,21 @@ class ArvoreBinaria {
         return serializarParenteses(raiz);
     }
 
-    private String serializarParenteses(No no) {
-        if (no == null) {
-            return "()";
-        }
+private String serializarParenteses(No no) {
 
-        return "(" + no.valor + serializarParenteses(no.esquerda) + serializarParenteses(no.direita) + ")";
+    if (no == null) {
+        return "()";
     }
+
+    char cor = no.vermelho ? 'R' : 'B';
+
+    return "("
+            + no.valor
+            + cor
+            + serializarParenteses(no.esquerda)
+            + serializarParenteses(no.direita)
+            + ")";
+}
 
     boolean inserir(int valor) {
         InsercaoResultado resultado = new InsercaoResultado();
@@ -446,29 +454,65 @@ class ArvoreBinaria {
     }
 
     private No desserializarParenteses(String texto, Cursor cursor) {
+
         avancarEspacos(texto, cursor);
 
         if (cursor.indice >= texto.length() || texto.charAt(cursor.indice) != '(') {
             throw new IllegalArgumentException("Formato inválido de serialização.");
         }
+
         cursor.indice++;
 
         avancarEspacos(texto, cursor);
+
         if (cursor.indice < texto.length() && texto.charAt(cursor.indice) == ')') {
             cursor.indice++;
             return null;
         }
 
         int valor = lerInteiro(texto, cursor);
+
         No no = new No(valor);
+
+        // Leitura da cor (compatível com arquivos antigos)
+        avancarEspacos(texto, cursor);
+
+        if (cursor.indice < texto.length()) {
+
+            char cor = texto.charAt(cursor.indice);
+
+            if (cor == 'R' || cor == 'B') {
+
+                no.vermelho = (cor == 'R');
+                cursor.indice++;
+            }
+            else {
+
+                // Arquivo antigo sem informação de cor
+                no.vermelho = false;
+            }
+        }
+
         no.esquerda = desserializarParenteses(texto, cursor);
+
+        if (no.esquerda != null) {
+            no.esquerda.pai = no;
+        }
+
         no.direita = desserializarParenteses(texto, cursor);
+
+        if (no.direita != null) {
+            no.direita.pai = no;
+        }
+
         atualizarAltura(no);
 
         avancarEspacos(texto, cursor);
+
         if (cursor.indice >= texto.length() || texto.charAt(cursor.indice) != ')') {
             throw new IllegalArgumentException("Formato inválido de serialização.");
         }
+
         cursor.indice++;
 
         return no;
